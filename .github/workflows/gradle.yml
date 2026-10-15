@@ -42,7 +42,7 @@ jobs:
           cp cloudnet-plugins/**/build/libs/*.jar temp/plugins/;
           cp cloudnet-launcher/build/libs/launcher.jar temp/launcher.jar;
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: CloudNet-v3
           path: temp/
