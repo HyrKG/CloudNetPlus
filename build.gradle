@@ -1,0 +1,271 @@
+/*
+ * Copyright 2019-2021 CloudNetService team & contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+  id 'org.ajoberstar.grgit' version '5.0.0'
+  id 'org.cadixdev.licenser' version '0.6.1' apply false
+}
+
+defaultTasks 'build', 'checkLicenses', 'test', 'jar'
+
+allprojects {
+
+  def major = 3, minor = 4, patch = 5, versionType = "RELEASE"
+
+  group 'de.dytanic.cloudnet'
+  version "$major.$minor.$patch-$versionType"
+
+  repositories {
+    mavenCentral()
+
+    maven {
+      name 'spongepowered'
+      url 'https://repo.spongepowered.org/maven'
+    }
+
+    maven {
+      name 'spigotmc-repo'
+      url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+    }
+
+    maven {
+      name 'waterdog'
+      url 'https://repo.waterdog.dev/artifactory/main/'
+    }
+
+    maven {
+      name 'velocity'
+      url 'https://repo.velocitypowered.com/snapshots/'
+    }
+
+    maven {
+      name 'nukkix'
+      url 'https://repo.nukkitx.com/maven-snapshots'
+    }
+
+    maven {
+      name 'sonatype'
+      url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+
+    maven {
+      name 'jitpack.io'
+      url 'https://jitpack.io'
+    }
+  }
+
+  project.ext {
+
+    cloudNetCodeName = 'Earthquake'
+
+    //Dependencies
+    dependencyGuavaVersion = '31.0.1-jre'
+    dependencyAnnotationsVersion = '23.0.0'
+    dependencyLombokVersion = '1.18.22'
+    dependencyH2Version = '1.4.197' // do not update, leads to database incompatibility
+    dependencyGsonVersion = '2.8.9'
+    dependencyNettyVersion = '4.1.73.Final'
+    dependencyJLineVersion = '3.21.0'
+    dependencyJAnsiVersion = '2.4.0'
+    dependencySpigotApiVersion = '1.8.8-R0.1-SNAPSHOT'
+    dependencySpongeVersion = '7.3.0'
+    dependencyBungeeCordVersion = '1.17-R0.1-SNAPSHOT'
+    dependencyVelocityVersion = '1.1.8'
+    dependencyNukkitXVersion = '1.0-SNAPSHOT'
+    dependencyGoMintVersion = '1.0.0-SNAPSHOT'
+    dependencyWaterdogPEVersion = '1.1.6-SNAPSHOT'
+    dependencyMysqlConnectorJavaVersion = '8.0.27'
+    dependencyHikariCpVersion = '4.0.3'
+    dependencyVaultVersion = '1.7.1'
+    dependencyProtocolLibVersion = 'master-SNAPSHOT'
+    dependencyNpcLibVersion = 'development-SNAPSHOT'
+    dependencyCommonsNetVersion = '3.8.0'
+    dependencyJschVersion = '0.1.55'
+    dependencyJavassistVersion = '3.28.0-GA'
+
+    testJunitVersion = '4.13.2'
+    testBcpkixJdk15OnVersion = '1.70'
+
+    buildCheckstyleToolVersion = '9.2.1'
+
+    //file
+    cloudnetLauncherFile = 'launcher.jar'
+    cloudnetCommonFile = 'common.jar'
+    cloudnetWrapperFile = 'wrapper.jar'
+
+    //compiled files for launcher
+    cloudnetRunnableOutFileName = 'cloudnet.jar'
+    cloudnetRunnableOutCNLFileName = 'cloudnet.cnl'
+
+    cloudnetDriverOutFileName = 'driver.jar'
+    cloudnetDriverOutCNLFileName = 'driver.cnl'
+
+    //cloudNet modules
+    cloudnetModuleBridgeFileName = 'cloudnet-bridge.jar'
+    cloudnetModuleLabyModFileName = 'cloudnet-labymod.jar'
+    cloudnetModuleSignsFileName = 'cloudnet-signs.jar'
+    cloudnetModuleNPCsFileName = 'cloudnet-npcs.jar'
+    cloudnetModuleSmartFileName = 'cloudnet-smart.jar'
+    cloudnetModuleSyncProxyFileName = 'cloudnet-syncproxy.jar'
+    cloudnetModuleCloudflareFileName = 'cloudnet-cloudflare.jar'
+    cloudnetModuleCloudPermsFileName = 'cloudnet-cloudperms.jar'
+    cloudnetModuleReportFileName = 'cloudnet-report.jar'
+    cloudnetModuleRestFileName = 'cloudnet-rest.jar'
+    cloudnetModuleNextCloudFileName = 'cloudnet-storage-nextcloud.jar'
+    cloudnetModuleStorageFTPFileName = 'cloudnet-storage-ftp.jar'
+    cloudnetModuleDatabaseMySQLFileName = 'cloudnet-database-mysql.jar'
+  }
+
+  ext.createCnlFile = { Project pro, String fileName ->
+
+    def stringBuilder = new StringBuilder("# CloudNet $cloudNetCodeName ${version}\n\n")
+      .append("# repositories\n\n")
+      .append("repo maven https://repo1.maven.org/maven2\n")
+      .append("# dependencies\n\n")
+
+    pro.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.forEach({
+
+      if (it.moduleVersion.id.group != project.group) {
+
+        stringBuilder
+          .append("include maven ")
+          .append(it.moduleVersion.id.group).append(" ")
+          .append(it.moduleVersion.id.name).append(" ")
+          .append(it.moduleVersion.id.version)
+
+        if (it.classifier != null) stringBuilder.append(" ").append(it.classifier)
+
+        stringBuilder.append("\n")
+      }
+    })
+
+    file("$pro.buildDir/libs/" + fileName).text = stringBuilder.toString()
+  }
+
+  ext.getCurrentCommitHash = {
+    grgit.head().id.substring(0, 7)
+  }
+}
+
+subprojects {
+
+  if (project.name == 'cloudnet-modules' || project.name == 'cloudnet-plugins') return
+
+  apply plugin: 'java'
+  apply plugin: 'checkstyle'
+  apply plugin: 'java-library'
+  apply plugin: 'maven-publish'
+  apply plugin: 'org.cadixdev.licenser'
+
+  compileJava {
+    options.encoding = 'UTF-8'
+  }
+
+  compileTestJava {
+    options.encoding = 'UTF-8'
+  }
+
+  javadoc {
+    options.encoding = 'UTF-8'
+  }
+
+  license {
+    include '**/*.java'
+    header = project.rootProject.file('LICENSE_HEADER')
+  }
+
+  checkstyle {
+    toolVersion = project.ext.buildCheckstyleToolVersion
+  }
+
+  tasks.withType(Checkstyle) {
+    maxErrors = 0
+    maxWarnings = 0
+    configFile = project.rootProject.file('checkstyle.xml')
+  }
+
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  dependencies {
+    implementation group: 'org.jetbrains', name: 'annotations', version: dependencyAnnotationsVersion
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: dependencyLombokVersion
+    testImplementation group: 'junit', name: 'junit', version: testJunitVersion
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: dependencyLombokVersion
+  }
+
+  jar {
+    from rootProject.file('LICENSE')
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+  }
+
+  task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier.set('sources')
+  }
+
+  task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier.set('javadoc')
+  }
+
+  publishing {
+    publications {
+      mavenJava(MavenPublication) {
+        from components.java
+        artifact sourcesJar
+        artifact javadocJar
+      }
+    }
+    repositories {
+      maven {
+        if (project.version.endsWith("RELEASE")) {
+          url 'https://repo.cloudnetservice.eu/repository/releases/'
+        } else {
+          url 'https://repo.cloudnetservice.eu/repository/snapshots/'
+        }
+
+        credentials {
+          username = project.hasProperty("mavenUser") ? project.property("mavenUser") : ""
+          password = project.hasProperty("mavenPassword") ? project.property("mavenPassword") : ""
+        }
+      }
+    }
+  }
+
+}
+
+task allJavadoc(type: Javadoc) {
+  dependsOn ':cloudnet-launcher:jar'
+
+  destinationDir = new File(buildDir, 'javadoc')
+  title = 'CloudNet documentation ' + version
+
+  options.encoding = 'UTF-8'
+  options.windowTitle = 'CloudNet Javadocs'
+  options.memberLevel = JavadocMemberLevel.PRIVATE
+  options.addBooleanOption "-no-module-directories", true
+
+  options.addStringOption('Xdoclint:none', '-quiet')
+
+  def exportedProjects = subprojects.findAll {
+    it.name != 'cloudnet-modules' && it.name != 'cloudnet-plugins'
+  }.collect { it.path }
+
+  source = exportedProjects.collect { project(it).sourceSets.main.allJava }
+  classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })
+  failOnError = false
+}

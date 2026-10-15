@@ -1,0 +1,748 @@
+{
+  "fileVersion": 1,
+  "versions": [
+    {
+      "name": "paperspigot",
+      "targetEnvironment": "MINECRAFT_SERVER_PAPER_SPIGOT",
+      "installSteps": [
+        "PAPER_API",
+        "DOWNLOAD",
+        "BUILD",
+        "COPY_FILTER"
+      ],
+      "website": "https://papermc.io",
+      "versions": [
+        {
+          "name": "latest",
+          "cacheFiles": false,
+          "minJavaVersion": 17,
+          "properties": {
+            "copy": {
+              "cache/.*": "/",
+              "versions/.*": "/",
+              "paper\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ],
+            "fetchOverPaperApi": true,
+            "versionGroup": "1.19"
+          }
+        },
+        {
+          "name": "1.19",
+          "minJavaVersion": 17,
+          "properties": {
+            "copy": {
+              "cache/.*": "/",
+              "versions/.*": "/",
+              "paper\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ],
+            "fetchOverPaperApi": true,
+            "versionGroup": "1.19"
+          }
+        },
+        {
+          "name": "1.18.2",
+          "minJavaVersion": 17,
+          "properties": {
+            "copy": {
+              "cache/.*": "/",
+              "versions/.*": "/",
+              "paper\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ],
+            "fetchOverPaperApi": true,
+            "versionGroup": "1.18.2"
+          }
+        },
+        {
+          "name": "1.17.1",
+          "minJavaVersion": 16,
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.17.1/builds/409/downloads/paper-1.17.1-409.jar",
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.16.5",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.16.5/builds/794/downloads/paper-1.16.5-794.jar",
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.15.2",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.15.2/builds/393/downloads/paper-1.15.2-393.jar",
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.14.4",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.14.4/builds/245/downloads/paper-1.14.4-245.jar",
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.13.2",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.13.2/builds/657/downloads/paper-1.13.2-657.jar",
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.12.2",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.12.2/builds/1620/downloads/paper-1.12.2-1620.jar",
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.11.2",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.11.2/builds/1106/downloads/paper-1.11.2-1106.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "jvmOptions": [
+              "-Dpaperclip.patchonly=true"
+            ]
+          }
+        },
+        {
+          "name": "1.10.2",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.10.2/builds/918/downloads/paper-1.10.2-918.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            },
+            "filteredFiles": [
+              "org/apache/logging/log4j/core/lookup/JndiLookup.class"
+            ]
+          }
+        },
+        {
+          "name": "1.9.4",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.9.4/builds/775/downloads/paper-1.9.4-775.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            }
+          }
+        },
+        {
+          "name": "1.8.8",
+          "url": "https://papermc.io/api/v2/projects/paper/versions/1.8.8/builds/445/downloads/paper-1.8.8-445.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "cache/patched.*\\.jar": "paper.jar"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "spigot",
+      "targetEnvironment": "MINECRAFT_SERVER_SPIGOT",
+      "website": "https://getbukkit.org",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://download.getbukkit.org/spigot/spigot-1.19.jar",
+          "cacheFiles": false,
+          "minJavaVersion": 17
+        },
+        {
+          "name": "1.19",
+          "url": "https://download.getbukkit.org/spigot/spigot-1.19.jar",
+          "minJavaVersion": 17
+        },
+        {
+          "name": "1.18.2",
+          "url": "https://download.getbukkit.org/spigot/spigot-1.18.2.jar",
+          "minJavaVersion": 17
+        },
+        {
+          "name": "1.17.1",
+          "url": "https://download.getbukkit.org/spigot/spigot-1.17.1.jar",
+          "minJavaVersion": 16,
+          "deprecated": true
+        },
+        {
+          "name": "1.16.5",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.16.5.jar",
+          "deprecated": true
+        },
+        {
+          "name": "1.15.2",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.15.2.jar",
+          "deprecated": true
+        },
+        {
+          "name": "1.14.4",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.14.4.jar",
+          "deprecated": true
+        },
+        {
+          "name": "1.13.2",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.13.2.jar",
+          "deprecated": true
+        },
+        {
+          "name": "1.12.2",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.12.2.jar",
+          "deprecated": true
+        },
+        {
+          "name": "1.11.2",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.11.2.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8
+        },
+        {
+          "name": "1.10.2",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.10.2-R0.1-SNAPSHOT-latest.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8
+        },
+        {
+          "name": "1.9.4",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.9.4-R0.1-SNAPSHOT-latest.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8
+        },
+        {
+          "name": "1.8.8",
+          "url": "https://cdn.getbukkit.org/spigot/spigot-1.8.8-R0.1-SNAPSHOT-latest.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8
+        }
+      ]
+    },
+    {
+      "name": "buildtools",
+      "targetEnvironment": "MINECRAFT_SERVER_SPIGOT",
+      "installSteps": [
+        "DOWNLOAD",
+        "BUILD",
+        "COPY_FILTER"
+      ],
+      "website": "https://spigotmc.org",
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "minJavaVersion": 17,
+          "cacheFiles": false,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "1.19"
+            ]
+          }
+        },
+        {
+          "name": "1.19",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "minJavaVersion": 17,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.18.2",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "minJavaVersion": 17,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.17.1",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "minJavaVersion": 16,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.16.5",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "maxJavaVersion": 13,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.15.2",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "maxJavaVersion": 13,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.14.4",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "maxJavaVersion": 13,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.13.2",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "maxJavaVersion": 13,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.12.2",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "maxJavaVersion": 10,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.11.2",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.10.2",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.9.4",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        },
+        {
+          "name": "1.8.8",
+          "url": "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar",
+          "deprecated": true,
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "spigot-.*\\.jar": "spigot.jar"
+            },
+            "parameters": [
+              "--rev",
+              "%version%"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "spongevanilla",
+      "targetEnvironment": "MINECRAFT_SERVER_SPONGE_VANILLA",
+      "website": "https://spongepowered.org",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://repo.spongepowered.org/repository/maven-releases/org/spongepowered/spongevanilla/1.12.2-7.4.4/spongevanilla-1.12.2-7.4.4.jar",
+          "cacheFiles": false
+        },
+        {
+          "name": "1.12.2",
+          "url": "https://repo.spongepowered.org/repository/maven-releases/org/spongepowered/spongevanilla/1.12.2-7.4.4/spongevanilla-1.12.2-7.4.4.jar"
+        }
+      ]
+    },
+    {
+      "name": "spongeforge",
+      "targetEnvironment": "MINECRAFT_SERVER_FORGE",
+      "installSteps": [
+        "DOWNLOAD",
+        "BUILD",
+        "COPY_FILTER"
+      ],
+      "website": "https://spongepowered.org / https://minecraftforge.net",
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860-installer.jar",
+          "maxJavaVersion": 8,
+          "cacheFiles": false,
+          "properties": {
+            "copy": {
+              "libraries/.*": "/",
+              ".*\\.json": "/",
+              "forge-.*\\.jar": "/",
+              "minecraft_server.*\\.jar": "/"
+            },
+            "parameters": [
+              "--installServer"
+            ]
+          },
+          "additionalDownloads": {
+            "mods/spongeforge.jar": "https://repo.spongepowered.org/repository/maven-releases/org/spongepowered/spongeforge/1.12.2-2838-7.4.4/spongeforge-1.12.2-2838-7.4.4.jar"
+          }
+        },
+        {
+          "name": "1.12.2",
+          "url": "https://maven.minecraftforge.net/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860-installer.jar",
+          "maxJavaVersion": 8,
+          "properties": {
+            "copy": {
+              "libraries/.*": "/",
+              ".*\\.json": "/",
+              "forge-.*\\.jar": "/",
+              "minecraft_server.*\\.jar": "/"
+            },
+            "parameters": [
+              "--installServer"
+            ]
+          },
+          "additionalDownloads": {
+            "mods/spongeforge.jar": "https://repo.spongepowered.org/repository/maven-releases/org/spongepowered/spongeforge/1.12.2-2838-7.4.4/spongeforge-1.12.2-2838-7.4.4.jar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "glowstone",
+      "targetEnvironment": "GLOWSTONE_DEFAULT",
+      "website": "https://github.com/GlowstoneMC",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://github.com/GlowstoneMC/Glowstone/releases/download/2018.9.0/glowstone.jar",
+          "cacheFiles": false
+        },
+        {
+          "name": "1.12.2",
+          "url": "https://github.com/GlowstoneMC/Glowstone/releases/download/2018.9.0/glowstone.jar"
+        },
+        {
+          "name": "1.8.9",
+          "url": "https://github.com/GlowstoneMC/Glowstone/releases/download/v1.8.9/glowstone.-1.8.9-SNAPSHOT.jar"
+        }
+      ]
+    },
+    {
+      "name": "waterdog",
+      "targetEnvironment": "WATERDOG_DEFAULT",
+      "website": "https://ci.codemc.org/job/yesdog/job/Waterdog",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://ci.codemc.org/job/yesdog/job/Waterdog/lastStableBuild/artifact/Waterfall-Proxy/bootstrap/target/Waterdog.jar",
+          "cacheFiles": false,
+          "deprecated": true
+        }
+      ]
+    },
+    {
+      "name": "waterdogpe",
+      "targetEnvironment": "WATERDOG_PE",
+      "website": "https://waterdog.dev",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://jenkins.waterdog.dev/job/Waterdog/job/WaterdogPE/job/master/lastSuccessfulBuild/artifact/target/Waterdog.jar",
+          "cacheFiles": false,
+          "minJavaVersion": 11
+        }
+      ]
+    },
+    {
+      "name": "bungeecord",
+      "targetEnvironment": "BUNGEECORD_DEFAULT",
+      "website": "https://ci.md-5.net/job/BungeeCord",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar",
+          "cacheFiles": false
+        }
+      ]
+    },
+    {
+      "name": "travertine",
+      "targetEnvironment": "BUNGEECORD_TRAVERTINE",
+      "website": "https://papermc.io",
+      "installSteps": [
+        "PAPER_API",
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "cacheFiles": false,
+          "deprecated": true,
+          "properties": {
+            "fetchOverPaperApi": true,
+            "versionGroup": "1.17"
+          }
+        }
+      ]
+    },
+    {
+      "name": "hexacord",
+      "targetEnvironment": "BUNGEECORD_HEXACORD",
+      "website": "https://github.com/HexagonMC/BungeeCord",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://github.com/HexagonMC/BungeeCord/releases/latest/download/BungeeCord.jar",
+          "cacheFiles": false
+        }
+      ]
+    },
+    {
+      "name": "waterfall",
+      "targetEnvironment": "BUNGEECORD_WATERFALL",
+      "website": "https://papermc.io",
+      "installSteps": [
+        "PAPER_API",
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "cacheFiles": false,
+          "properties": {
+            "fetchOverPaperApi": true,
+            "versionGroup": "1.19"
+          }
+        }
+      ]
+    },
+    {
+      "name": "velocity",
+      "targetEnvironment": "VELOCITY_DEFAULT",
+      "website": "https://velocitypowered.com",
+      "installSteps": [
+        "PAPER_API",
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "cacheFiles": false,
+          "minJavaVersion": 11,
+          "properties": {
+            "fetchOverPaperApi": true,
+            "versionGroup": "3.1.1"
+          }
+        },
+        {
+          "name": "development",
+          "cacheFiles": false,
+          "minJavaVersion": 11,
+          "properties": {
+            "fetchOverPaperApi": true,
+            "versionGroup": "3.1.2-SNAPSHOT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "nukkit",
+      "targetEnvironment": "NUKKIT_DEFAULT",
+      "website": "https://nukkitx.com",
+      "installSteps": [
+        "DOWNLOAD"
+      ],
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://ci.nukkitx.com/job/NukkitX/job/Nukkit/job/master/lastSuccessfulBuild/artifact/target/nukkit-1.0-SNAPSHOT.jar",
+          "cacheFiles": false,
+          "maxJavaVersion": 11
+        }
+      ]
+    },
+    {
+      "name": "gomint",
+      "targetEnvironment": "GO_MINT_DEFAULT",
+      "installSteps": [
+        "DOWNLOAD",
+        "UNZIP",
+        "COPY_FILTER"
+      ],
+      "website": "https://gomint.io",
+      "versions": [
+        {
+          "name": "latest",
+          "url": "https://gomint-artifacts.s3.amazonaws.com/latest.zip",
+          "minJavaVersion": 9,
+          "cacheFiles": false,
+          "deprecated": true,
+          "properties": {
+            "copy": {
+              "modules/.*": "/"
+            }
+          },
+          "additionalDownloads": {
+            "modules/gson-2.8.6.jar": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar"
+          }
+        }
+      ]
+    }
+  ]
+}
