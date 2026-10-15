@@ -16,11 +16,14 @@
 
 package de.dytanic.cloudnet.ext.rest.http;
 
+import de.dytanic.cloudnet.cluster.IClusterNodeServerProvider;
+import de.dytanic.cloudnet.cluster.NodeServer;
 import de.dytanic.cloudnet.common.document.gson.JsonDocument;
 import de.dytanic.cloudnet.driver.network.http.HttpResponseCode;
 import de.dytanic.cloudnet.driver.network.http.IHttpContext;
 import de.dytanic.cloudnet.http.V1HttpHandler;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class V1HttpHandlerCluster extends V1HttpHandler {
 
@@ -35,13 +38,17 @@ public final class V1HttpHandlerCluster extends V1HttpHandler {
 
   @Override
   public void handleGet(String path, IHttpContext context) {
+    IClusterNodeServerProvider nodeServerProvider = super.getCloudNet().getClusterNodeServerProvider();
+    Stream<NodeServer> nodeServers = Stream.concat(
+      Stream.of(nodeServerProvider.getSelfNode()), nodeServerProvider.getNodeServers().stream());
+
     if (context.request().pathParameters().containsKey("node")) {
       context
         .response()
         .statusCode(HttpResponseCode.HTTP_OK)
         .header("Content-Type", "application/json")
         .body(GSON.toJson(
-          super.getCloudNet().getClusterNodeServerProvider().getNodeServers().stream()
+          nodeServers
             .filter(nodeServer -> nodeServer.getNodeInfo().getUniqueId().toLowerCase()
               .contains(context.request().pathParameters().get("node")))
             .map(nodeServer -> new JsonDocument()
@@ -58,7 +65,7 @@ public final class V1HttpHandlerCluster extends V1HttpHandler {
         .statusCode(HttpResponseCode.HTTP_OK)
         .header("Content-Type", "application/json")
         .body(GSON.toJson(
-          super.getCloudNet().getClusterNodeServerProvider().getNodeServers().stream()
+          nodeServers
             .filter(nodeServer -> !context.request().queryParameters().containsKey("uniqueId") ||
               this.containsStringElementInCollection(context.request().queryParameters().get("uniqueId"),
                 nodeServer.getNodeInfo().getUniqueId()))
