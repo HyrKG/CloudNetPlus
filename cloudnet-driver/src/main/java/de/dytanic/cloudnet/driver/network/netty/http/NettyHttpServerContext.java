@@ -45,6 +45,7 @@ import org.jetbrains.annotations.ApiStatus;
 final class NettyHttpServerContext implements IHttpContext {
 
   protected final Collection<HttpCookie> cookies = new ArrayList<>();
+  private final Collection<HttpCookie> responseCookies = new ArrayList<>();
 
   protected final Channel nettyChannel;
 
@@ -84,8 +85,6 @@ final class NettyHttpServerContext implements IHttpContext {
           cookie.maxAge()
         )).collect(Collectors.toList()));
     }
-
-    this.updateHeaderResponse();
   }
 
   @Override
@@ -187,6 +186,8 @@ final class NettyHttpServerContext implements IHttpContext {
 
     this.cookies.clear();
     this.cookies.addAll(cookies);
+    this.responseCookies.clear();
+    this.responseCookies.addAll(cookies);
     this.updateHeaderResponse();
 
     return this;
@@ -196,12 +197,10 @@ final class NettyHttpServerContext implements IHttpContext {
   public IHttpContext addCookie(HttpCookie httpCookie) {
     Preconditions.checkNotNull(httpCookie);
 
-    HttpCookie cookie = this.cookie(httpCookie.getName());
-
-    if (cookie != null) {
-      this.removeCookie(cookie.getName());
-    }
+    this.cookies.removeIf(cookie -> cookie.getName().equalsIgnoreCase(httpCookie.getName()));
     this.cookies.add(httpCookie);
+    this.responseCookies.removeIf(cookie -> cookie.getName().equalsIgnoreCase(httpCookie.getName()));
+    this.responseCookies.add(httpCookie);
     this.updateHeaderResponse();
 
     return this;
@@ -212,31 +211,38 @@ final class NettyHttpServerContext implements IHttpContext {
     Preconditions.checkNotNull(name);
 
     HttpCookie cookie = this.cookie(name);
-    if (cookie != null) {
-      cookie.setMaxAge(-1);
+    if (cookie == null) {
+      cookie = new HttpCookie(name, "", null, "/", 0);
+    } else {
+      cookie.setValue("");
+      cookie.setMaxAge(0);
+      if (cookie.getPath() == null) {
+        cookie.setPath("/");
+      }
     }
 
-    this.updateHeaderResponse();
-    return this;
+    return this.addCookie(cookie);
   }
 
   @Override
   public IHttpContext clearCookies() {
     this.cookies.clear();
+    this.responseCookies.clear();
     this.updateHeaderResponse();
     return this;
   }
 
   private void updateHeaderResponse() {
-    if (this.cookies.isEmpty()) {
+    if (this.responseCookies.isEmpty()) {
       this.httpServerResponse.httpResponse.headers().remove("Set-Cookie");
     } else {
       this.httpServerResponse.httpResponse.headers()
-        .set("Set-Cookie", ServerCookieEncoder.LAX.encode(this.cookies.stream().map(httpCookie -> {
+        .set("Set-Cookie", ServerCookieEncoder.LAX.encode(this.responseCookies.stream().map(httpCookie -> {
           Cookie cookie = new DefaultCookie(httpCookie.getName(), httpCookie.getValue());
           cookie.setDomain(httpCookie.getDomain());
           cookie.setMaxAge(httpCookie.getMaxAge());
           cookie.setPath(httpCookie.getPath());
+          cookie.setHttpOnly(httpCookie.isHttpOnly());
 
           return cookie;
         }).collect(Collectors.toList())));

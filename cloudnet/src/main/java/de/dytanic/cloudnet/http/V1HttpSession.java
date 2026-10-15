@@ -16,30 +16,54 @@
 
 package de.dytanic.cloudnet.http;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.JWTVerifier;
 import com.google.common.base.Preconditions;
 import de.dytanic.cloudnet.CloudNet;
-import de.dytanic.cloudnet.common.encrypt.EncryptTo;
+import de.dytanic.cloudnet.common.document.gson.JsonDocument;
 import de.dytanic.cloudnet.driver.network.http.HttpCookie;
 import de.dytanic.cloudnet.driver.network.http.IHttpContext;
 import de.dytanic.cloudnet.driver.permission.IPermissionUser;
+import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public final class V1HttpSession {
 
   private static final Pattern BASE64_PATTERN = Pattern
     .compile("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$");
-  private static final String COOKIE_NAME = "CloudNet-REST_V1-Session." + new Random().nextInt();
+  private static final String COOKIE_NAME = "CloudNet-REST_V1-Session";
+  private static final String ISSUER = "CloudNet-REST-v1";
+  private static final Path SIGNING_KEY_FILE = Paths.get("local/http-session.json");
 
-  private static final long EXPIRE_TIME = 1000 * 60 * 60 * 24;
+  private static final long EXPIRE_SECONDS = TimeUnit.DAYS.toSeconds(30);
 
-  private final Collection<SessionEntry> entries = new CopyOnWriteArrayList<>();
+  private final Algorithm algorithm;
+  private final JWTVerifier verifier;
+
+  public V1HttpSession() {
+    this.algorithm = Algorithm.HMAC256(this.loadSigningKey());
+    this.verifier = JWT.require(this.algorithm)
+      .withIssuer(ISSUER)
+      .withClaimPresence("sub")
+      .withClaimPresence("iat")
+      .withClaimPresence("exp")
+      .build();
+  }
 
   public boolean auth(IHttpContext context) throws Exception {
     if (this.isAuthorized(context)) {
@@ -74,123 +98,85 @@ public final class V1HttpSession {
       return false;
     }
 
-    SessionEntry sessionEntry = new SessionEntry(
-      System.nanoTime(),
-      System.currentTimeMillis(),
-      UUID.randomUUID().toString(),
-      permissionUser.getUniqueId().toString()
-    );
-
-    context.addCookie(new HttpCookie(
-      COOKIE_NAME,
-      this.createKey(sessionEntry, context),
-      null,
-      "/",
-      sessionEntry.lastUsageMillis + EXPIRE_TIME))
-      .response()
-      .statusCode(200)
-    ;
-
-    this.entries.add(sessionEntry);
+    this.renewCookie(context, permissionUser);
+    context.response().statusCode(200);
     return true;
   }
 
   public boolean isAuthorized(IHttpContext context) {
-    if (!context.hasCookie(COOKIE_NAME)) {
-      return false;
-    }
-
-    HttpCookie httpCookie = context.cookie(COOKIE_NAME);
-
-    SessionEntry sessionEntry = this.getValidSessionEntry(httpCookie.getValue(), context);
-    if (sessionEntry == null) {
-      return false;
-    }
-
-    if ((sessionEntry.lastUsageMillis + EXPIRE_TIME) < System.currentTimeMillis()) {
-      this.logout(context);
-      return false;
-    }
-
-    sessionEntry.lastUsageMillis = System.currentTimeMillis();
-    httpCookie.setMaxAge(sessionEntry.lastUsageMillis + EXPIRE_TIME);
-    return true;
-  }
-
-  public SessionEntry getValidSessionEntry(String cookieValue, IHttpContext context) {
-    if (cookieValue == null || context == null) {
-      return null;
-    }
-
-    for (SessionEntry entry : this.entries) {
-      if (cookieValue.equals(this.createKey(entry, context))) {
-        return entry;
+    IPermissionUser user = this.getUser(context);
+    if (user == null) {
+      if (context.hasCookie(COOKIE_NAME)) {
+        this.logout(context);
       }
+      return false;
     }
 
-    return null;
+    this.renewCookie(context, user);
+    return true;
   }
 
   public void logout(IHttpContext context) {
     Preconditions.checkNotNull(context);
-
-    SessionEntry sessionEntry = this.getValidSessionEntry(this.getCookieValue(context), context);
-    if (sessionEntry != null) {
-      this.entries.remove(sessionEntry);
-    }
-
-    context.removeCookie(COOKIE_NAME);
+    this.setCookie(context, "", 0);
   }
 
   public IPermissionUser getUser(IHttpContext context) {
     Preconditions.checkNotNull(context);
 
-    SessionEntry sessionEntry = this.getValidSessionEntry(this.getCookieValue(context), context);
-
-    return this.getUser(sessionEntry, context);
-  }
-
-  private IPermissionUser getUser(SessionEntry sessionEntry, IHttpContext context) {
-    if (sessionEntry == null || context == null) {
+    HttpCookie cookie = context.cookie(COOKIE_NAME);
+    if (cookie == null) {
       return null;
     }
 
-    return CloudNet.getInstance().getPermissionManagement().getUser(UUID.fromString(sessionEntry.userUniqueId));
-  }
-
-  private String getCookieValue(IHttpContext context) {
-    HttpCookie httpCookie = context.cookie(COOKIE_NAME);
-
-    if (httpCookie != null) {
-      return httpCookie.getValue();
-    } else {
+    try {
+      DecodedJWT token = this.verifier.verify(cookie.getValue());
+      if (token.getSubject() == null || token.getIssuedAt() == null || token.getExpiresAt() == null) {
+        return null;
+      }
+      return CloudNet.getInstance().getPermissionManagement().getUser(UUID.fromString(token.getSubject()));
+    } catch (JWTVerificationException | IllegalArgumentException exception) {
       return null;
     }
   }
 
-  private String createKey(SessionEntry sessionEntry, IHttpContext context) {
-    return Base64.getEncoder().encodeToString(EncryptTo.encryptToSHA256(sessionEntry.creationTime +
-      ":" +
-      context.channel().clientAddress().getHost() +
-      "#" +
-      sessionEntry.uniqueId +
-      "#" +
-      sessionEntry.userUniqueId
-    ));
+  private void renewCookie(IHttpContext context, IPermissionUser user) {
+    Instant now = Instant.now();
+    String token = JWT.create()
+      .withIssuer(ISSUER)
+      .withSubject(user.getUniqueId().toString())
+      .withIssuedAt(now)
+      .withExpiresAt(now.plusSeconds(EXPIRE_SECONDS))
+      .sign(this.algorithm);
+    this.setCookie(context, token, EXPIRE_SECONDS);
   }
 
-  public static class SessionEntry {
+  private void setCookie(IHttpContext context, String value, long maxAge) {
+    HttpCookie cookie = new HttpCookie(COOKIE_NAME, value, null, "/", maxAge);
+    cookie.setHttpOnly(true);
+    context.addCookie(cookie);
+  }
 
-    private final long creationTime;
-    private final String uniqueId;
-    private final String userUniqueId;
-    private long lastUsageMillis;
+  private byte[] loadSigningKey() {
+    try {
+      if (Files.notExists(SIGNING_KEY_FILE)) {
+        byte[] key = new byte[32];
+        new SecureRandom().nextBytes(key);
+        Files.createDirectories(SIGNING_KEY_FILE.getParent());
+        try (Writer writer = Files.newBufferedWriter(SIGNING_KEY_FILE, StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+          new JsonDocument("signingKey", Base64.getEncoder().encodeToString(key)).write(writer);
+        }
+        return key;
+      }
 
-    public SessionEntry(long creationTime, long lastUsageMillis, String uniqueId, String userUniqueId) {
-      this.creationTime = creationTime;
-      this.lastUsageMillis = lastUsageMillis;
-      this.uniqueId = uniqueId;
-      this.userUniqueId = userUniqueId;
+      String encodedKey = JsonDocument.newDocument(SIGNING_KEY_FILE).getString("signingKey");
+      Preconditions.checkState(encodedKey != null, "Missing signingKey in %s", SIGNING_KEY_FILE);
+      byte[] key = Base64.getDecoder().decode(encodedKey);
+      Preconditions.checkState(key.length == 32, "Invalid signingKey in %s", SIGNING_KEY_FILE);
+      return key;
+    } catch (IOException exception) {
+      throw new IllegalStateException("Unable to create REST session signing key at " + SIGNING_KEY_FILE, exception);
     }
   }
 }

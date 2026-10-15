@@ -29,6 +29,7 @@ public class HttpCookie {
   protected String path;
 
   protected long maxAge;
+  protected boolean httpOnly;
 
   public HttpCookie(String name, String value, String domain, String path, long maxAge) {
     this.name = name;
@@ -79,6 +80,14 @@ public class HttpCookie {
 
   public void setMaxAge(long maxAge) {
     this.maxAge = maxAge;
+  }
+
+  public boolean isHttpOnly() {
+    return this.httpOnly;
+  }
+
+  public void setHttpOnly(boolean httpOnly) {
+    this.httpOnly = httpOnly;
   }
 
 }

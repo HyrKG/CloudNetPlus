@@ -70,6 +70,64 @@ Web 模块独立监听端口，页面直接挂载 `/`，API 在同一端口的 `
 登录复用 CloudNet 权限系统中的账号密码。用户名和密码经现有 Basic 登录接口换取 Cookie 会话，
 密码不写入本地存储；前端不维护独立用户、令牌或权限系统。
 
+### 保持登录
+
+浏览器保存 `CloudNet-REST_V1-Session` Cookie，连续 30 天未访问接口才过期；
+已认证的接口请求会重新签发凭证，并将有效期顺延 30 天。刷新页面、重开普通浏览器窗口或重启节点后，
+前端继续通过现有状态接口恢复登录，不需要保存密码。
+
+会话实现位于 CloudNet 核心，由原有 REST 服务与 Web 模块共用。
+凭证使用 [java-jwt](https://github.com/auth0/java-jwt) 的 HS256 签名，包含用户 UUID、签发时间、过期时间及签发者，
+不包含密码或权限；每次请求仍读取现有账号和权限。
+Cookie 设置 `Path=/`、`HttpOnly` 和 `Max-Age=2592000`（秒），符合
+[Set-Cookie 定义](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)。
+页面及静态资源请求不会将请求 Cookie 自动写回响应。
+
+首次加载 REST 处理器时，核心生成 256 位随机密钥并保存到节点工作目录的 `local/http-session.json`：
+
+```json
+{
+  "signingKey": "自动生成的 Base64 密钥"
+}
+```
+
+后续启动读取同一文件，不保存会话列表或新增数据库表。保留该文件并随节点数据一起备份；
+删除、更换密钥或清除浏览器 Cookie 后，需要重新登录。密钥文件损坏时不会自动覆盖生成新密钥。
+首次从旧会话实现升级需要重新登录一次；默认仅支持同一节点的会话恢复。
+
+退出会用 `Max-Age=0` 清除当前浏览器的 Cookie。已经复制出去的凭证不会立即撤销，
+仍可在有效期内使用；更换签名密钥会使该节点此前签发的凭证全部失效。
+
+### 持久登录所需的核心升级
+
+**仅替换 `cloudnet-web.jar` 或 `cloudnet-rest.jar` 不会更新核心会话实现。**
+需要同时部署本次源码对应的核心、驱动及依赖清单。以下为打包命令，本说明不代表已执行打包：
+
+```powershell
+.\gradlew.bat :cloudnet:jar :cloudnet-driver:jar
+```
+
+停止节点后，将以下文件替换到实际启用的 `launcher/versions/<版本>/` 目录，保留 `local/`：
+
+| 构建产物 | 目标文件 |
+| --- | --- |
+| `cloudnet/build/libs/cloudnet.jar` | `cloudnet.jar` |
+| `cloudnet/build/libs/cloudnet.cnl` | `cloudnet.cnl` |
+| `cloudnet-driver/build/libs/driver.jar` | `driver.jar` |
+| `cloudnet-driver/build/libs/driver.cnl` | `driver.cnl` |
+
+保留已适配的 Web 与 REST 模块。启动器会根据更新的 CNL 清单安装 `java-jwt` 及其运行依赖，
+因此不能遗漏清单。使用本仓库定制版本时，`launcher.cnl` 中保持以下设置，避免启动时覆盖定制文件：
+
+```text
+var cloudnet.launcher.dev-mode false
+var cloudnet.auto-update false
+var cloudnet.snapshots.use-snapshots false
+```
+
+重新启动节点后登录一次，后续重启复用该 Cookie 和密钥文件。回退核心时需同时恢复对应的驱动和 CNL 清单，
+并重新登录；无需删除密钥文件。
+
 ### 账号权限
 
 按现有 CloudNet 权限管理方式，为使用控制台的账号配置所需权限：
@@ -105,6 +163,7 @@ Vite 将 `/api` 转发到 `.env.local` 中的 `CLOUDNET_API_TARGET`，默认 `ht
 ## 更新、回退与卸载
 
 - 更新：停止节点，替换同次构建的 `cloudnet-web.jar` 和 `cloudnet-rest.jar`，重新启动。
+- 本次持久登录涉及核心更新，首次升级还需按上文同步替换核心、驱动及 CNL 清单；保留 `local/http-session.json`。
 - 回退：停止节点，恢复对应版本的 Web 和 REST 模块，重新启动。
 - 卸载：停止节点，移除 `cloudnet-web.jar`，重新启动；REST 模块可继续保留。
 
@@ -119,6 +178,9 @@ Vite 将 `/api` 转发到 `.env.local` 中的 `CLOUDNET_API_TARGET`，默认 `ht
 
 - 模块加载后独立端口的 `/`、JS、CSS 和字体可访问，未知资源返回 404，停止模块后关闭该端口。
 - 正确密码、错误密码、会话失效、退出、资源权限不足分别展示对应状态。
+- 登录后刷新、重开浏览器及重启节点能恢复登录；接口请求将 Cookie 有效期顺延 30 天。
+- 过期、篡改凭证或删除用户后拒绝访问，权限变更继续生效；退出后刷新页面不能恢复登录。
+- 页面及静态资源响应不覆盖登录 Cookie；登录、续期和退出响应只包含一个同名 Cookie。
 - 节点和服务数据、内存单位、CPU、生命周期与 REST 返回内容一致。
 - 搜索和筛选生效，点击节点可查看该节点的服务，服务详情可打开和关闭。
 - 启停重启后重新读取服务状态，请求期间禁用操作按钮。
