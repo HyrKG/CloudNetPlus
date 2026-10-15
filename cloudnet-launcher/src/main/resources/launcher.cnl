@@ -11,7 +11,7 @@ var cloudnet.versions.url https://cloudnetservice.eu/cloudnet/versions.json
 var cloudnet.repository https://cloudnetservice.eu/cloudnet/updates/
 var cloudnet.repository.github CloudNetService/CloudNet-v3
 var cloudnet.auto-update true
-var cloudnet.messages.language english
+var cloudnet.messages.language chinese
 
 # this makes the launcher download and start snapshot versions of the cloud
 # it's not recommended to enable this in production, snapshot versions aren't fully tested and might contain bugs
