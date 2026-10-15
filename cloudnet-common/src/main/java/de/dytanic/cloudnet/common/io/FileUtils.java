@@ -135,8 +135,13 @@ public final class FileUtils {
   }
 
   public static void copyFilesToDirectory(Path from, Path to) {
+    if (Files.isDirectory(from)) {
+      createDirectoryReported(to);
+    }
     walkFileTree(from, (root, current) -> {
-      if (!Files.isDirectory(current)) {
+      if (Files.isDirectory(current)) {
+        createDirectoryReported(to.resolve(from.relativize(current)));
+      } else {
         try {
           FileUtils.copy(current, to.resolve(from.relativize(current)));
         } catch (IOException exception) {
@@ -150,8 +155,13 @@ public final class FileUtils {
     if (filter == null) {
       copyFilesToDirectory(from, to);
     } else {
+      if (Files.isDirectory(from)) {
+        createDirectoryReported(to);
+      }
       walkFileTree(from, (root, current) -> {
-        if (!Files.isDirectory(current)) {
+        if (Files.isDirectory(current)) {
+          createDirectoryReported(to.resolve(from.relativize(current)));
+        } else {
           try {
             FileUtils.copy(current, to.resolve(from.relativize(current)));
           } catch (IOException exception) {
