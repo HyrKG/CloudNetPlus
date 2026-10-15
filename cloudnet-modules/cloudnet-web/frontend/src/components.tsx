@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { AlertCircle, Check, Cloud, Inbox, LoaderCircle, X } from 'lucide-react';
+import { AlertCircle, Check, Cloud, Inbox, LoaderCircle, Moon, Sun, X } from 'lucide-react';
 import { hasMetric, lifecycleLabels } from './format';
 import type { LifeCycle } from './types';
 
@@ -14,6 +14,13 @@ export function Button({ children, variant = 'secondary', className = '', busy, 
     className={`button button-${variant} ${className}`} aria-busy={busy || undefined}>
     {busy && <LoaderCircle size={15} className="spin" />}{children}
   </button>;
+}
+
+export function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
+  const label = dark ? '切换至浅色模式' : '切换至深色模式';
+  return <Button variant="ghost" className="icon-button" onClick={onToggle} aria-label={label} title={label}>
+    {dark ? <Sun size={18} /> : <Moon size={18} />}
+  </Button>;
 }
 
 export function Message({ children, kind = 'error' }: { children: ReactNode; kind?: 'error' | 'success' }) {

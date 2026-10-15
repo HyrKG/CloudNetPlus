@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ffffff" />
+    <script>
+      (() => {
+        let theme = 'light';
+        try { theme = localStorage.getItem('cloudnet-web-theme') === 'dark' ? 'dark' : 'light'; } catch {}
+        const root = document.documentElement;
+        const background = theme === 'dark' ? '#111111' : '#ffffff';
+        root.dataset.theme = theme;
+        root.style.colorScheme = theme;
+        root.style.backgroundColor = background;
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', background);
+      })();
+    </script>
     <meta name="description" content="CloudNet 中文网络运维控制台" />
     <title>CloudNet · 管理控制台</title>
   </head>

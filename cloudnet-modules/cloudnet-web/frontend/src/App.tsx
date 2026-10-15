@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ArrowRight, ChevronRight, LayoutDashboard, LoaderCircle, LogOut, Menu, Network, RefreshCw, Server, UserRound, X,
 } from 'lucide-react';
 import { ApiError, api, errorMessage, isUnauthorized } from './api';
-import { Brand, Button, Message } from './components';
+import { Brand, Button, Message, ThemeToggle } from './components';
 import { NodesPage, OverviewPage, ServicesPage } from './pages';
 
 type View = 'overview' | 'nodes' | 'services';
@@ -14,6 +14,8 @@ const navigation = [
 ];
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
   const [session, setSession] = useState<'checking' | 'signed-in' | 'signed-out'>('checking');
   const [account, setAccount] = useState('');
   const [sessionError, setSessionError] = useState('');
@@ -24,6 +26,16 @@ export default function App() {
     setAccount('');
     setSessionError('登录已失效，请重新登录。');
   }, []);
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = theme;
+    root.style.colorScheme = theme;
+    const background = getComputedStyle(root).getPropertyValue('--canvas').trim();
+    root.style.backgroundColor = background;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background);
+    try { localStorage.setItem('cloudnet-web-theme', theme); } catch { /* Keep switching available if storage is blocked. */ }
+  }, [theme]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -60,16 +72,20 @@ export default function App() {
     }
   }
 
+  const themeToggle = <ThemeToggle dark={theme === 'dark'}
+    onToggle={() => setTheme(value => value === 'dark' ? 'light' : 'dark')} />;
+
   if (session === 'checking') return <div className="session-loading"><Brand />
     <LoaderCircle size={22} className="spin" /><span>加载中…</span></div>;
-  if (session === 'signed-out') return <Login initialError={sessionError} onLogin={username => {
+  if (session === 'signed-out') return <Login themeToggle={themeToggle} initialError={sessionError} onLogin={username => {
     setAccount(username); setSessionError(''); setSession('signed-in');
   }} />;
   return <Workspace account={account} onUnauthorized={expireSession} onLogout={() => void logout()}
-    loggingOut={loggingOut} error={sessionError} />;
+    loggingOut={loggingOut} error={sessionError} themeToggle={themeToggle} />;
 }
 
-function Login({ initialError, onLogin }: { initialError: string; onLogin: (username: string) => void }) {
+function Login({ initialError, onLogin, themeToggle }:
+  { initialError: string; onLogin: (username: string) => void; themeToggle: ReactNode }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -92,7 +108,8 @@ function Login({ initialError, onLogin }: { initialError: string; onLogin: (user
     }
   }
 
-  return <div className="login-page"><main className="login-form-wrap"><Brand />
+  return <div className="login-page"><div className="login-theme-toggle">{themeToggle}</div>
+    <main className="login-form-wrap"><Brand />
       <h1>登录 CloudNet</h1><p className="login-description">使用 CloudNet 账号登录</p>
       <Message>{error || initialError}</Message>
       <form onSubmit={event => void submit(event)} className="login-form">
@@ -105,8 +122,9 @@ function Login({ initialError, onLogin }: { initialError: string; onLogin: (user
     </main></div>;
 }
 
-function Workspace({ account, onUnauthorized, onLogout, loggingOut, error }:
-  { account: string; onUnauthorized: () => void; onLogout: () => void; loggingOut: boolean; error: string }) {
+function Workspace({ account, onUnauthorized, onLogout, loggingOut, error, themeToggle }:
+  { account: string; onUnauthorized: () => void; onLogout: () => void; loggingOut: boolean; error: string;
+    themeToggle: ReactNode }) {
   const [view, setView] = useState<View>('overview');
   const [mobileNav, setMobileNav] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -139,7 +157,7 @@ function Workspace({ account, onUnauthorized, onLogout, loggingOut, error }:
       <Button variant="ghost" className="mobile-only icon-button" onClick={() => setMobileNav(true)} aria-label="打开导航">
         <Menu size={20} /></Button><span>工作空间</span><ChevronRight size={14} />
       <strong>{navigation.find(item => item.id === view)?.label}</strong>
-    </div><div className="topbar-actions"><Button variant="ghost" onClick={() => setRefreshToken(value => value + 1)}
+    </div><div className="topbar-actions">{themeToggle}<Button variant="ghost" onClick={() => setRefreshToken(value => value + 1)}
       aria-label="刷新当前页面"><RefreshCw size={16} /><span className="desktop-label">刷新</span></Button>
       <span className="topbar-divider" /><span className="account-avatar"><UserRound size={16} /></span>
       <span className="account-name">{account || '管理会话'}</span><Button variant="ghost" className="icon-button"
