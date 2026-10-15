@@ -1,0 +1,52 @@
+/*
+ * Copyright 2019-2021 CloudNetService team & contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+def frontendDirectory = file('frontend')
+def frontendOutput = file("$buildDir/web")
+def npmCommand = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+
+tasks.register('installFrontend', Exec) {
+  workingDir frontendDirectory
+  commandLine npmCommand, 'ci', '--no-audit', '--no-fund'
+  inputs.files('frontend/package.json', 'frontend/package-lock.json')
+  outputs.dir('frontend/node_modules')
+}
+
+tasks.register('buildFrontend', Exec) {
+  dependsOn tasks.named('installFrontend')
+  workingDir frontendDirectory
+  commandLine npmCommand, 'run', 'build'
+  inputs.files(fileTree(frontendDirectory) {
+    exclude 'node_modules/**', '.env*.local'
+  })
+  outputs.dir(frontendOutput)
+}
+
+processResources {
+  dependsOn tasks.named('buildFrontend')
+  from(frontendOutput) {
+    into 'web'
+  }
+}
+
+jar {
+  archiveFileName.set('cloudnet-web.jar')
+}
+
+dependencies {
+  compileOnly project(':cloudnet')
+  compileOnly project(':cloudnet-modules:cloudnet-rest')
+}

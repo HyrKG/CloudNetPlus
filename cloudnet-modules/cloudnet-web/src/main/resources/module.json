@@ -1,0 +1,16 @@
+{
+  "group": "de.dytanic.cloudnet.modules",
+  "name": "CloudNet-Web",
+  "version": "1.0",
+  "author": "CloudNetService",
+  "website": "https://cloudnetservice.eu",
+  "description": "Chinese web console for CloudNet 3.4.5",
+  "main": "de.dytanic.cloudnet.ext.web.CloudNetWebModule",
+  "dependencies": [
+    {
+      "group": "de.dytanic.cloudnet.modules",
+      "name": "CloudNet-REST",
+      "version": "1.0"
+    }
+  ]
+}

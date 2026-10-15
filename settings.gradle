@@ -57,6 +57,8 @@ include 'cloudnet-modules:cloudnet-cloudperms'
 findProject(':cloudnet-modules:cloudnet-cloudperms')?.name = 'cloudnet-cloudperms'
 include 'cloudnet-modules:cloudnet-rest'
 findProject(':cloudnet-modules:cloudnet-rest')?.name = 'cloudnet-rest'
+include 'cloudnet-modules:cloudnet-web'
+findProject(':cloudnet-modules:cloudnet-web')?.name = 'cloudnet-web'
 
 // plugins
 include 'cloudnet-plugins:cloudnet-chat'

@@ -19,6 +19,7 @@ package de.dytanic.cloudnet.ext.rest;
 import de.dytanic.cloudnet.driver.module.ModuleLifeCycle;
 import de.dytanic.cloudnet.driver.module.ModuleTask;
 import de.dytanic.cloudnet.driver.network.http.IHttpHandler;
+import de.dytanic.cloudnet.driver.network.http.IHttpServer;
 import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerAuthentication;
 import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerCluster;
 import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerCommand;
@@ -40,7 +41,11 @@ public final class CloudNetRestModule extends NodeCloudNetModule {
 
   @ModuleTask(order = 127, event = ModuleLifeCycle.STARTED)
   public void initHttpHandlers() {
-    this.getHttpServer()
+    registerHttpHandlers(this.getHttpServer());
+  }
+
+  public static void registerHttpHandlers(IHttpServer httpServer) {
+    httpServer
       .registerHandler("/api/v1", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerShowOpenAPI())
       //HttpHandler API implementation
       .registerHandler("/api/v1/*", IHttpHandler.PRIORITY_HIGH, new V1SecurityProtectionHttpHandler())
