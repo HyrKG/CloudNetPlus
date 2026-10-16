@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Code2, Plus, Save, Search } from 'lucide-react';
 import { api } from './api';
+import { taskTargetLabel } from './format';
 import { Button, EmptyState, Message, PageHeading, Panel } from './components';
 import { ServiceTable } from './services';
 import type { Configuration, ServiceTemplate } from './types';
@@ -75,6 +76,7 @@ export function ConfigurationPage({ kind, creating = false }: { kind: 'tasks' | 
       : kind === 'tasks' && tab === 'monitor' ? <TaskMonitor task={name} />
       : kind === 'tasks' ? <><FleetErrors sources={[services, fleet.players, fleet.metrics]} /><ServiceSummary services={taskServices} />
         <div className="resource-context"><span>{config.maintenance ? '维护中' : '正常'}</span>
+          <span>目标数量：{taskTargetLabel(config)}</span>
           <span>最低数量：{config.minServiceCount ?? 0}</span><span>可调度：{config.associatedNodes?.join('、') || '全部节点'}</span></div><Panel title="任务实例">
         {taskServices.length ? <ServiceTable services={taskServices} onSelect={id => navigate(resourceUrl('services', id))} />
           : <EmptyState loading={services.loading} title="暂无实例" />}</Panel><CapacityTable task={config} /></>
@@ -136,6 +138,7 @@ function ConfigurationEditor({ kind, original, names, onSaved, onCancel }:
     } catch (cause) { return { draft: null, error: cause instanceof Error ? cause.message : 'JSON 格式错误' }; }
   }, [raw]);
   const draft = parsed.draft;
+  const target = draft?.properties?.targetServiceCount ?? -1;
   const nameError = draft && original && draft.name !== original.name ? '已有资源名称不可修改。'
     : draft && !original && names.some(name => name.toLowerCase() === String(draft.name).toLowerCase()) ? '名称已存在。' : '';
   function update(patch: Partial<Configuration>) { if (draft) setRaw(JSON.stringify({ ...draft, ...patch }, null, 2)); }
@@ -161,8 +164,10 @@ function ConfigurationEditor({ kind, original, names, onSaved, onCancel }:
           {kind === 'tasks' && <><label>运行环境<select value={draft.processConfiguration?.environment ?? 'MINECRAFT_SERVER'}
             onChange={event => process({ environment: event.target.value })}>{environments.map(environment =>
               <option key={environment}>{environment}</option>)}</select></label>
-            <label>最低运行数量<input type="number" min={0} step={1} required value={draft.minServiceCount ?? 0}
-              onChange={event => update({ minServiceCount: Number(event.target.value) })} /></label>
+            <label>最低运行数量<input type="number" min={0} step={1} required disabled={target >= 0}
+              value={target >= 0 ? target : draft.minServiceCount ?? 0}
+              onChange={event => update({ minServiceCount: Number(event.target.value) })} />
+              {target >= 0 && <span className="field-hint">由目标数量 {target} 控制；请通过任务操作修改或停用目标。</span>}</label>
             <label>最大堆内存（MiB）<input type="number" min={1} step={1} required value={draft.processConfiguration?.maxHeapMemorySize ?? 512}
               onChange={event => process({ maxHeapMemorySize: Number(event.target.value) })} /></label>
             <label>起始端口<input type="number" min={1} max={65535} step={1} required value={draft.startPort ?? 44955}

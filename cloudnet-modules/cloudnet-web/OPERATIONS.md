@@ -221,24 +221,32 @@ Web 与 REST 应配套更新，旧网页不会发送确认，达到缓冲上限�
 任务管理列表和任务详情提供：
 
 - **临时启动**：复用已有创建弹窗，预选任务，不修改最低数量。
-- **设置数量**：只修改 `minServiceCount`；增加后由核心补开，降低不主动停止实例。
+- **设置目标数量**：原最低数量按钮的位置。保存 `properties.targetServiceCount`，启用时联动 `minServiceCount`；核心补服，CloudNet-Target 逐台关闭多余空服。
+- **设置最低数量**：移入 More；目标启用时禁用，REST 拒绝冲突修改。目标停用时仅修改 `minServiceCount`，降低不主动停止实例。
 - **停止**：包含有玩家的运行实例，保留最低数量，核心可能自动补开。
-- **清零并停止**：先保存最低数量 0，确认负责调度的主节点已同步，再逐台提交停止。
+- **清零并停止**：先保存最低数量 0，同时把已启用的目标数量设为 0，未启用的目标保持原值；确认主节点已同步两项配置，再逐台提交停止。
 
 停止确认展示任务、实例、节点、在线人数及停止后是否自动删除。后台执行时重新读取运行实例并固定本批名单，
 提交每台前再次检查状态；已停止或删除标记 `skipped`。停止调用现有 provider，沿用 `autoDeleteOnStop`，不强制删除保留型实例。
-数量修改在执行时读取最新完整任务，只改变最低数量，保留扩展属性、模板等配置。
+数量修改在执行时读取最新完整任务，只改变所选数量及其联动值，保留其他扩展属性、模板等配置。
 保存被拒绝、主节点身份变化或同步未确认时，不继续停止；同步确认最长等待约 5 秒，远端查询单次最长 3 秒。
-清零不取消核心此前已开始的启动流程，也不追停新实例；部分停止失败不回滚已保存的 0。
+清零不取消核心此前已开始的启动流程，本批操作不追停新实例；仍启用的目标功能会继续回收空服。部分停止失败不回滚已保存的 0。
+
+目标缺省或 `-1` 表示停用，停用后最低数量保留最后值；`0` 是有效目标，有人的实例等无人后再自动关闭。
+目标数量按集群运行实例统计，维护模式暂停调节；配置表单中的最低数量在目标启用时只展示联动值。
+各节点需安装 CloudNet-Target 与 Bridge、更新 REST，入口更新 Web；不使用 Smart。
+模块配置、缩容节奏和独立 JAR 说明见 [CloudNet-Target](../cloudnet-target/README.md)。
 
 | 接口（前缀 `/api/v1`） | 请求及权限 |
 | --- | --- |
 | `POST /tasks/{name}/minimum-services` | `{ "count": 2 }`；非负整数；`cloudnet.http.v1.tasks.post` |
+| `POST /tasks/{name}/target-services` | `{ "count": 2 }`；-1 至 2147483647 的整数；`cloudnet.http.v1.tasks.post` |
 | `POST /tasks/{name}/stop` | `{ "clearMinimum": false }`；`cloudnet.http.v1.services.operation.post`；true 时还需 `cloudnet.http.v1.tasks.post` |
 | `GET /task-operations/{id}` | 仅提交用户读取，且仍需持有原操作权限 |
 | `GET /metrics/tasks/history` | 任务资源历史；`cloudnet.http.v1.metrics.get` |
 
-写入返回 HTTP `202` 与 `{ "id": "…" }`。查询返回 `task / action / status / count / minimumSaved / total / results / reason / completedAt`。
+写入返回 HTTP `202` 与 `{ "id": "…" }`。查询返回 `task / action / status / count / minimumSaved / targetSaved / total / results / reason / completedAt`。
+`action` 支持 `minimum / target / stop / clear-stop`；`targetSaved` 表示目标配置已保存，不表示运行数量已经达到目标。
 `status` 为 `queued / saving / stopping / completed`；`completed` 仅表示本批处理结束，并不表示实例均已关闭。
 逐实例结果含 `id / name / node / status / reason`，状态为 `submitted / skipped / not_submitted`。
 `minimumSaved` 表示配置已保存；即使后续同步确认或停止失败也不自动回滚。

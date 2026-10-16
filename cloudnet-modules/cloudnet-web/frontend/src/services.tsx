@@ -2,7 +2,7 @@ import { ChevronDown, LoaderCircle, Play, RefreshCw, Square, Terminal } from 'lu
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Button, EmptyState, StatusBadge } from './components';
-import { memoryBytes, memoryMb, percent, serviceName, serviceTps } from './format';
+import { memoryBytes, memoryMb, percent, serviceName, serviceTps, taskTargetLabel } from './format';
 import { metricReason, useFleet } from './fleet';
 import { resourceUrl, useServiceOperations } from './workspace';
 import { ServiceHistoryProvider, ServiceSparkline } from './ServiceHistory';
@@ -139,7 +139,7 @@ export function GroupedServiceTable({ tasks, nodeId = '', filtered = false, acti
         }}><ChevronDown size={16} className={hidden ? 'collapsed' : ''} /></button>
           <div className="group-title">{task ? <Link title={name} to={resourceUrl('tasks', name)}>{name}</Link> : <strong title={name}>{name}</strong>}
             <small>{services.filter(item => item.lifeCycle === 'RUNNING').length} / {services.length} 运行
-              {tasks && task && <> · 集群最低数量 {task.minServiceCount ?? 0}{task.maintenance && ' · 维护中'}</>}
+              {tasks && task && <> · 集群目标数量 {taskTargetLabel(task)} · 最低数量 {task.minServiceCount ?? 0}{task.maintenance && ' · 维护中'}</>}
               {tasks && !task && ' · 无任务配置'}{filtered && ' · 筛选范围'}</small></div></div>
         <div className="group-summary"><div><span>在线 / 容量</span><strong>{fleet.playerLabel(services)}</strong>
           {historyTasks.has(name) && <TaskSparkline task={name} field="Online-Count" />}</div>

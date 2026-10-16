@@ -798,7 +798,7 @@ input[type='checkbox'] { width: 15px; height: 15px; margin: 2px 0 0; accent-colo
   .player-recipient-list > div { grid-template-columns: 1fr; gap: 6px; }
 }
 
-/* Task controls stay on one line, with full text for the minimum count. */
+/* Task controls stay on one line, with full text for the target count. */
 .task-actions { display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; white-space: nowrap; }
 .task-actions > * { flex-shrink: 0; }
 .task-actions-compact { gap: 4px; }

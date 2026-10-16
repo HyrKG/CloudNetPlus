@@ -85,6 +85,8 @@ export const api = {
   },
   setTaskMinimum: (name: string, count: number, signal: AbortSignal) =>
     request<{ id: string }>(`/tasks/${encodeURIComponent(name)}/minimum-services`, signal, { method: 'POST', body: { count } }),
+  setTaskTarget: (name: string, count: number, signal: AbortSignal) =>
+    request<{ id: string }>(`/tasks/${encodeURIComponent(name)}/target-services`, signal, { method: 'POST', body: { count } }),
   stopTask: (name: string, clearMinimum: boolean, signal: AbortSignal) =>
     request<{ id: string }>(`/tasks/${encodeURIComponent(name)}/stop`, signal, { method: 'POST', body: { clearMinimum } }),
   taskOperation: (id: string, signal: AbortSignal) => request<TaskOperation>(`/task-operations/${encodeURIComponent(id)}`, signal),

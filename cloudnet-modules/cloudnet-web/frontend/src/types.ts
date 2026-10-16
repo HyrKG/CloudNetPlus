@@ -176,7 +176,7 @@ export interface Configuration {
   templates: ServiceTemplate[];
   includes: unknown[];
   deployments: unknown[];
-  properties: Record<string, unknown>;
+  properties: Record<string, unknown> & { targetServiceCount?: number };
   jvmOptions?: string[];
   processParameters?: string[];
   targetEnvironments?: string[];
@@ -255,10 +255,11 @@ export type TaskHistoryResponse = PlayerHistoryResponse;
 export interface TaskOperation {
   id: string;
   task: string;
-  action: 'minimum' | 'stop' | 'clear-stop';
+  action: 'minimum' | 'target' | 'stop' | 'clear-stop';
   status: 'queued' | 'saving' | 'stopping' | 'completed';
   count: number | null;
   minimumSaved: boolean;
+  targetSaved: boolean;
   total: number;
   results: { id: string; name: string; node: string; status: 'submitted' | 'skipped' | 'not_submitted'; reason?: string }[];
   reason?: string;

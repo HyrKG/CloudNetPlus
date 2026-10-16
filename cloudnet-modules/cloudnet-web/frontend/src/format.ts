@@ -1,4 +1,4 @@
-import type { Address, LifeCycle, ServiceSnapshot } from './types';
+import type { Address, Configuration, LifeCycle, ServiceSnapshot } from './types';
 import { METRIC_MAX_AGE } from './monitoring';
 
 export const lifecycleLabels: Record<LifeCycle, string> = {
@@ -8,6 +8,11 @@ export const lifecycleLabels: Record<LifeCycle, string> = {
 export const serviceName = (service: ServiceSnapshot) => {
   const id = service.configuration.serviceId;
   return `${id.taskName}-${id.taskServiceId}`;
+};
+
+export const taskTargetLabel = (task: Configuration) => {
+  const target = task.properties?.targetServiceCount ?? -1;
+  return target >= 0 ? String(target) : '未启用';
 };
 
 export const hasMetric = (value: number | null | undefined): value is number =>

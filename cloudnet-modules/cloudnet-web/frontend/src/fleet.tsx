@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Donut, topSlices, useChartColors } from './charts';
 import { api } from './api';
 import { EmptyState, Message, Meter, Panel } from './components';
-import { hasMetric, memoryBytes, memoryMb, percent, serviceName, timeLabel } from './format';
+import { hasMetric, memoryBytes, memoryMb, percent, serviceName, taskTargetLabel, timeLabel } from './format';
 import type { ClusterEntry, Configuration, NodeMetrics, OnlinePlayer, ServiceSnapshot } from './types';
 import { resourceUrl, useData, useFleetIndex } from './workspace';
 import { TaskHistoryProvider, TaskSparkline } from './TaskHistory';
@@ -98,14 +98,14 @@ export function ServiceSummary({ services }: { services: ServiceSnapshot[] }) {
 export function TaskTable({ tasks, nodeId, actions }: { tasks: Configuration[]; nodeId?: string; actions?: (task: Configuration) => ReactNode }) {
   const fleet = useFleet();
   return <TaskHistoryProvider tasks={tasks.map(task => task.name)} node={nodeId}><div className="table-scroll"><table className="service-table compact-table"><thead><tr>
-    <th>任务</th><th>运行 / 总数</th><th>最低数量</th><th>玩家 / 容量</th><th>进程内存</th><th>CPU · 逻辑核</th><th>部署节点</th><th>状态</th><th />
+    <th>任务</th><th>运行 / 总数</th><th>目标 / 最低数量</th><th>玩家 / 容量</th><th>进程内存</th><th>CPU · 逻辑核</th><th>部署节点</th><th>状态</th><th />
   </tr></thead><tbody>{tasks.map(task => {
     const instances = (fleet.index.tasks.get(task.name) ?? []).filter(service => !nodeId || service.configuration.serviceId.nodeUniqueId === nodeId);
     const total = fleet.totals(instances);
     const deployed = Array.from(new Set(instances.map(item => item.configuration.serviceId.nodeUniqueId)));
     return <tr key={task.name}><td><Link className="resource-name" to={resourceUrl('tasks', task.name)}>{task.name}</Link></td>
       <td>{fleet.services.data ? `${instances.filter(item => item.lifeCycle === 'RUNNING').length} / ${instances.length}` : '—'}</td>
-      <td>{task.minServiceCount ?? 0}</td>
+      <td>{taskTargetLabel(task)} / {task.minServiceCount ?? 0}</td>
       <td><div className="metric-trend"><span>{fleet.playerLabel(instances)}</span><TaskSparkline task={task.name} field="Online-Count" /></div></td>
       <td><div className="metric-trend"><span>{fleet.services.data ? memoryBytes(total.memory) : '—'}</span><TaskSparkline task={task.name} field="residentMemoryBytes" /></div></td>
       <td><div className="metric-trend"><span>{fleet.services.data && total.cores !== null ? total.cores.toFixed(2) : '—'}</span><TaskSparkline task={task.name} field="cpuCores" /></div></td>

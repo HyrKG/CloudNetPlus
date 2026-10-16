@@ -3,23 +3,28 @@ import { Ellipsis, Hash, Square } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { api, ApiError, errorMessage } from './api';
 import { Button, Dialog, EmptyState, Message, MoreMenu, useNotice, useNotifications } from './components';
-import { serviceName } from './format';
+import { serviceName, taskTargetLabel } from './format';
 import { useFleet } from './fleet';
 import { LaunchServices } from './operations';
 import type { Configuration } from './types';
 import { Confirm, resourceUrl, useData, useOperation } from './workspace';
 
 export function TaskActions({ task, compact = false, onDeleted }: { task: Configuration; compact?: boolean; onDeleted?: () => void }) {
-  const [action, setAction] = useState<'launch' | 'minimum' | 'stop' | 'delete' | null>(null);
+  const [action, setAction] = useState<'launch' | 'minimum' | 'target' | 'stop' | 'delete' | null>(null);
   const [count, setCount] = useState('0');
   const [, setParams] = useSearchParams();
   const fleet = useFleet();
   const operation = useOperation();
   useEffect(operation.clearError, [action, operation.clearError]);
   const running = (fleet.index.tasks.get(task.name) ?? []).filter(service => service.lifeCycle === 'RUNNING');
+  const target = task.properties?.targetServiceCount ?? -1;
+  const editingCount = action === 'minimum' || action === 'target';
+  const minimumLocked = action === 'minimum' && target >= 0;
+  const countLabel = action === 'target' ? '目标数量' : '最低运行数量';
   const close = () => { if (!operation.busy) setAction(null); };
   function submit(clearMinimum = false) {
     void operation.run(signal => action === 'minimum' ? api.setTaskMinimum(task.name, Number(count), signal)
+      : action === 'target' ? api.setTaskTarget(task.name, Number(count), signal)
       : api.stopTask(task.name, clearMinimum, signal), result => {
       setAction(null);
       setParams(previous => { const next = new URLSearchParams(previous); next.set('operation', result.id); return next; });
@@ -27,12 +32,15 @@ export function TaskActions({ task, compact = false, onDeleted }: { task: Config
   }
   return <><div className={`task-actions ${compact ? 'task-actions-compact' : ''}`}>
     {([
-      ['minimum', '设置最低数量', Hash], ['stop', '停止任务', Square],
+      ['target', '设置目标数量', Hash], ['stop', '停止任务', Square],
     ] as const).map(([value, label, Icon]) => <Button key={value} className={compact ? `button-small ${value === 'stop' ? 'icon-button' : ''}` : ''}
       title={`${label} · ${task.name}`} aria-label={`${label} · ${task.name}`} onClick={() => {
-        setCount(String(task.minServiceCount ?? 0)); setAction(value);
-      }}><Icon size={15} />{(value === 'minimum' || !compact) && label}</Button>)}
+        setCount(String(target)); setAction(value);
+      }}><Icon size={15} />{(value === 'target' || !compact) && label}</Button>)}
     <MoreMenu label={`更多任务操作 · ${task.name}`} icon={<Ellipsis size={16} />}>
+        <button disabled={target >= 0} title={target >= 0 ? '最低数量由目标数量控制，请先停用目标数量' : undefined}
+          onClick={() => { setCount(String(task.minServiceCount ?? 0)); setAction('minimum'); }}>
+          设置最低数量{target >= 0 && '（由目标控制）'}</button>
         <button onClick={() => setAction('launch')}>临时启动</button>
         <Link to={resourceUrl('tasks', task.name)}>任务详情</Link>
         <Link to={`${resourceUrl('tasks', task.name)}/monitor`}>监控</Link>
@@ -45,13 +53,16 @@ export function TaskActions({ task, compact = false, onDeleted }: { task: Config
       onConfirm={() => void operation.run(signal => api.deleteConfiguration('tasks', task.name, signal), () => {
         setAction(null); fleet.tasks.refresh(); onDeleted?.();
       })}>确认删除 {task.name} 的永久配置？现有实例沿用 CloudNet 的处理方式。</Confirm>}
-    {(action === 'minimum' || action === 'stop') && <Dialog title={`${action === 'minimum' ? '设置最低运行数量' : '停止任务'} · ${task.name}`} onClose={close}>
-      <form className="detail-body" onSubmit={event => { event.preventDefault(); if (action === 'minimum') submit(); }}><Message>{operation.error}</Message>
-        {action === 'minimum' ? <><label className="task-minimum-field">最低运行数量<input type="number" min={0} max={2147483647} step={1} required
-          data-dialog-focus value={count} disabled={operation.busy} onChange={event => setCount(event.target.value)} /></label>
-          <p className="field-hint">仅修改最低数量。提高后由核心补开；降低不会主动关闭实例。</p></>
-          : <><p className="field-hint">操作整个任务，不受列表筛选限制。集群最低数量：{task.minServiceCount ?? 0}。</p>
-            <p className="field-hint">普通停止保留最低数量，核心可能自动补开。清零并停止先保存最低数量 0，确认主节点已同步后再停止；已进入启动流程的实例可能继续启动，不会循环追停。</p>
+    {(editingCount || action === 'stop') && <Dialog title={`${editingCount ? `设置${countLabel}` : '停止任务'} · ${task.name}`} onClose={close}>
+      <form className="detail-body" onSubmit={event => { event.preventDefault(); if (editingCount && !minimumLocked) submit(); }}><Message>{operation.error}</Message>
+        {editingCount ? <><label className="task-minimum-field">{countLabel}<input type="number" min={action === 'target' ? -1 : 0} max={2147483647} step={1} required
+          data-dialog-focus value={count} disabled={operation.busy || minimumLocked} onChange={event => setCount(event.target.value)} /></label>
+          {action === 'target' ? <><p className="field-hint">不足时自动补开，超出时逐台关闭空服；有人的实例保留至无人。维护期间暂停调节。</p>
+            <p className="field-hint">0 表示逐步关闭全部空服；-1 停用目标功能。启用后最低数量同步为目标，停用后最低数量保留最后值。</p></>
+            : <p className="field-hint">{minimumLocked ? '最低数量由目标数量控制，请先停用目标数量。' : '仅修改最低数量。提高后由核心补开；降低不会主动关闭实例。'}</p>}</>
+          : <><p className="field-hint">操作整个任务，不受列表筛选限制。集群目标数量：{taskTargetLabel(task)}；最低数量：{task.minServiceCount ?? 0}。</p>
+            <p className="field-hint">普通停止保留数量配置，核心可能自动补开。清零并停止将最低数量和已启用的目标数量设为 0，确认主节点已同步后再停止。</p>
+            <p className="field-hint">已进入启动流程的实例可能继续启动；本批操作不追停新实例，仍启用的目标功能会继续回收空服。</p>
             <p className="field-hint">包含有玩家的实例。停止后按实例配置自动删除；保留型实例不额外删除。执行时重新读取并固定本批运行实例。</p>
             <Message>{fleet.services.error || fleet.players.error}</Message>
             <div className="table-scroll"><table className="service-table compact-table"><thead><tr><th>实例</th><th>节点</th><th>在线玩家</th><th>停止后</th></tr></thead>
@@ -61,8 +72,8 @@ export function TaskActions({ task, compact = false, onDeleted }: { task: Config
             {!running.length && <EmptyState loading={fleet.services.loading} title="当前没有运行实例" />}
             <p className="field-hint">当前 {running.length} 台，在线 {fleet.playerCount(running) ?? '—'} 人。</p></>}
         <div className="form-actions task-confirm-actions"><Button data-dialog-focus={action === 'stop' || undefined} onClick={close} disabled={operation.busy}>取消</Button>
-          {action === 'minimum' ? <Button type="submit" variant="primary" busy={operation.busy}
-            disabled={count === '' || !Number.isInteger(Number(count)) || Number(count) < 0 || Number(count) > 2147483647}>确认保存</Button>
+          {editingCount ? <Button type="submit" variant="primary" busy={operation.busy}
+            disabled={minimumLocked || count === '' || !Number.isInteger(Number(count)) || Number(count) < (action === 'target' ? -1 : 0) || Number(count) > 2147483647}>确认保存</Button>
             : <>{[false, true].map(clear => <Button key={String(clear)} variant={clear ? 'primary' : 'secondary'}
               disabled={operation.busy || !fleet.services.data || Boolean(fleet.services.error)} onClick={() => submit(clear)}>
               {clear ? '清零并停止' : '普通停止'}</Button>)}</>}</div>
@@ -121,12 +132,16 @@ function OperationProgress({ id, onDismiss }: { id: string; onDismiss: (id: stri
     const failures = job.results.filter(result => result.status === 'not_submitted');
     const submitted = job.results.filter(result => result.status === 'submitted').length;
     const skipped = job.results.filter(result => result.status === 'skipped').length;
-    const pending = job.status === 'queued' ? '排队中' : job.status === 'saving' ? '保存并确认最低数量' : `正在提交停止 ${job.results.length}/${job.total}`;
-    if (job.status === 'completed' && job.action === 'minimum' && job.minimumSaved && !job.reason) return `${job.task} · 最低数量已保存为 ${job.count}`;
-    return <><strong>{job.task} · {job.status !== 'completed' ? pending : job.action === 'minimum'
-      ? job.minimumSaved ? `最低数量已保存为 ${job.count}` : '数量未保存' : `本批处理结束：已提交 ${submitted}，跳过 ${skipped}，未提交 ${failures.length}`}</strong>
+    const countAction = job.action === 'minimum' || job.action === 'target';
+    const countSaved = job.action === 'target' ? job.targetSaved : job.minimumSaved;
+    const countResult = job.action === 'target' ? job.count === -1 ? '目标功能已停用，最低数量保留最后值' : `目标数量已保存为 ${job.count}`
+      : `最低数量已保存为 ${job.count}`;
+    const pending = job.status === 'queued' ? '排队中' : job.status === 'saving' ? '保存数量配置' : `正在提交停止 ${job.results.length}/${job.total}`;
+    if (job.status === 'completed' && countAction && countSaved && !job.reason) return `${job.task} · ${countResult}`;
+    return <><strong>{job.task} · {job.status !== 'completed' ? pending : countAction
+      ? countSaved ? countResult : '数量未保存' : `本批处理结束：已提交 ${submitted}，跳过 ${skipped}，未提交 ${failures.length}`}</strong>
       {job.reason && <p>{job.reason}</p>}
-      {job.action === 'clear-stop' && job.minimumSaved && <p>最低数量已保存为 0。</p>}
+      {job.action === 'clear-stop' && job.minimumSaved && <p>{job.targetSaved ? '最低数量和目标数量已保存为 0。' : '最低数量已保存为 0。'}</p>}
       {failures.length > 0 && <details><summary>查看未提交原因（{failures.length}）</summary><ul>{failures.map(result =>
         <li key={result.id}>{result.name} · {result.node}：{result.reason}</li>)}</ul></details>}
       <Button variant="ghost" className="button-small" onClick={() => setDetails(true)}>查看进度与实际状态</Button></>;
@@ -145,10 +160,10 @@ function OperationProgress({ id, onDismiss }: { id: string; onDismiss: (id: stri
         {job?.results.map(result => <tr key={result.id}><td>{result.name}</td><td>{result.node}</td>
           <td>{{ submitted: '已提交', skipped: '跳过', not_submitted: '未提交' }[result.status]}</td><td>{result.reason}</td></tr>)}
       </tbody></table></div>
-      {complete && job?.action !== 'minimum' && <><h3>仍在运行 · {fleet.services.error ? '读取失败' : remaining.length}</h3>
+      {complete && (job?.action === 'stop' || job?.action === 'clear-stop') && <><h3>仍在运行 · {fleet.services.error ? '读取失败' : remaining.length}</h3>
         <Message>{fleet.services.error}</Message><div className="inline-links">{remaining.map(service => <Link key={service.configuration.serviceId.uniqueId}
           to={resourceUrl('services', service.configuration.serviceId.uniqueId)} onClick={() => setDetails(false)}>{serviceName(service)}</Link>)}</div>
-        <p className="field-hint">按当前服务状态持续刷新，可能包含正在停止或刚启动的实例；不会自动追停。</p></>}
+        <p className="field-hint">按当前服务状态持续刷新，可能包含正在停止或刚启动的实例；本批操作不追停，目标功能仍按任务配置生效。</p></>}
       <div className="form-actions"><Button onClick={() => setDetails(false)}>收起</Button>{complete && <Button onClick={() => onDismiss(id)}>关闭记录</Button>}</div>
     </div></Dialog>}
   </>;
