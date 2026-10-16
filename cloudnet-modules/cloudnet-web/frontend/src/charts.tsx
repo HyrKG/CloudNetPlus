@@ -28,15 +28,17 @@ export function topSlices(items: Slice[]) {
   return top;
 }
 
-export function Donut({ title, items, format }: { title: string; items: Slice[]; format: (value: number) => string }) {
+export function Donut({ title, items, format, size }: { title: string; items: Slice[]; format: (value: number) => string; size?: number }) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
+  const chartSize = size ?? 190;
+  const style = size === undefined ? undefined : { width: size, height: size, flexBasis: size };
   return <Panel title={title} className="distribution-panel"><div className="resource-chart">
-    {total > 0 ? <div className="donut"><ResponsiveContainer width="100%" height={190}>
-      <PieChart><Pie data={items} dataKey="value" nameKey="name" innerRadius={54} outerRadius={80} isAnimationActive={false}
+    {total > 0 ? <div className="donut" style={style}><ResponsiveContainer width="100%" height={chartSize}>
+      <PieChart><Pie data={items} dataKey="value" nameKey="name" innerRadius={54 * chartSize / 190} outerRadius={80 * chartSize / 190} isAnimationActive={false}
         shape={(props: PieSectorShapeProps) => <Sector {...props} fill={items[props.index]?.color ?? otherColor} stroke="var(--card)" strokeWidth={2} />} />
       <Tooltip formatter={value => format(Number(value))}
         contentStyle={{ background: 'var(--card)', border: '1px solid var(--line-strong)', borderRadius: 8 }} itemStyle={{ color: 'var(--ink)' }} /></PieChart>
-    </ResponsiveContainer></div> : <div className="donut empty-chart">{items.length ? '当前用量为零' : '暂无有效数据'}</div>}
+    </ResponsiveContainer></div> : <div className="donut empty-chart" style={style}>{items.length ? '当前用量为零' : '暂无有效数据'}</div>}
     <div className="chart-legend">{items.map(item => <div key={item.id}>
       <span className="chart-dot" style={{ background: item.color }} />
       {item.to ? <Link title={item.name} to={item.to}>{item.name}</Link> : <span title={item.name}>{item.name}</span>}

@@ -46,7 +46,7 @@ export function OverviewPage() {
   const memory = slices(memoryTasks);
   const color = useChartColors([...players, ...memory].filter(item => item.id !== '__other').map(item => item.id));
   const colors = (items: Slice[]) => items.map(item => ({ ...item, color: item.color ?? color(item.id) }));
-  return <><PageHeading title="运行概览" actions={<Button onClick={() => setParams(previous => {
+  return <div className="overview-page"><PageHeading title="运行概览" actions={<Button onClick={() => setParams(previous => {
     const next = new URLSearchParams(previous); big ? next.delete('display') : next.set('display', 'wall'); return next;
   }, { replace: true })}>{big ? <Minimize2 size={16} /> : <Maximize2 size={16} />}{big ? '退出大屏' : '大屏'}</Button>} />
     <FleetErrors sources={[fleet.services, fleet.nodes, fleet.tasks, fleet.players, fleet.metrics]} />
@@ -61,15 +61,15 @@ export function OverviewPage() {
     ]} />
     <MetricsTrends />
     <PlayerTrends />
-    <div className="overview-distributions"><Donut title="玩家分布 · 服务器任务" items={colors(players)} format={value => `${value} 人`} />
-      <Donut title="进程内存 · 任务分布" items={colors(memory)} format={memoryBytes} />
-      <Donut title="实例状态" items={[...states.values()]} format={value => `${value} 台`} /></div>
+    <div className="overview-distributions"><Donut title="玩家分布 · 服务器任务" items={colors(players)} format={value => `${value} 人`} size={128} />
+      <Donut title="进程内存 · 任务分布" items={colors(memory)} format={memoryBytes} size={128} />
+      <Donut title="实例状态" items={[...states.values()]} format={value => `${value} 台`} size={128} /></div>
     <Panel title="任务运行" action={<Link to="/tasks">全部任务 →</Link>}>
       {fleet.tasks.data?.length ? <TaskTable tasks={fleet.tasks.data} /> : <EmptyState loading={fleet.tasks.loading} title="暂无任务" />}
     </Panel>
     <Panel title="节点资源" action={<Link to="/nodes">全部节点 →</Link>}>
       {fleet.nodes.data?.length ? <NodeTable nodes={fleet.nodes.data} /> : <EmptyState loading={fleet.nodes.loading} title="暂无节点" />}
     </Panel>
-  </>;
+  </div>;
 }
 

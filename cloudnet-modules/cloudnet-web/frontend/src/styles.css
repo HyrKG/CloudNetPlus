@@ -821,3 +821,32 @@ input[type='checkbox'] { width: 15px; height: 15px; margin: 2px 0 0; accent-colo
   .task-confirm-actions .button { padding-inline: 8px; font-size: 12px; }
 }
 .task-minimum-field { display: grid; gap: 8px; margin-bottom: 12px; }
+
+/* Overview density follows the available content width in every display mode. */
+.overview-page { container: overview / inline-size; display: grid; gap: 12px; min-width: 0; }
+.overview-page .page-heading, .overview-page .summary-strip, .overview-page .metrics-section,
+.overview-page .overview-distributions { margin: 0; }
+.overview-page .summary-strip > div { padding: 10px 12px; }
+.overview-page .summary-strip span { margin-bottom: 4px; }
+.overview-page .panel-heading { padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
+.overview-page .metrics-heading { gap: 8px; }
+.overview-page .metrics-heading h2 { margin: 0; }
+.overview-page .metrics-heading select { height: 32px; padding: 5px 8px; }
+.overview-page .trend-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.overview-page .trend-chart { height: 180px; }
+.overview-page .empty-state { min-height: 180px; }
+.overview-page .trend-legend { gap: 6px 12px; margin: 8px 0; }
+.overview-page .player-trend-legend { padding: 0 12px; }
+.overview-page .sampling-devices { margin-top: 8px; }
+.overview-page .overview-distributions .resource-chart { flex-direction: row; gap: 8px; padding: 8px 12px; }
+.overview-page .overview-distributions .chart-legend { width: auto; }
+.overview-page .chart-legend > div { gap: 6px; padding: 4px 0; }
+.overview-page .service-table th, .overview-page .service-table td { padding-block: 6px; }
+.overview-page .service-table td { height: auto; }
+
+@container overview (min-width: 640px) {
+  .overview-page .trend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container overview (min-width: 1200px) {
+  .overview-page .metrics-section:not(.player-trends) > .trend-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
