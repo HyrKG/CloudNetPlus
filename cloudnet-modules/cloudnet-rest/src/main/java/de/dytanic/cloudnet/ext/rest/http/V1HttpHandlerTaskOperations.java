@@ -27,6 +27,7 @@ public final class V1HttpHandlerTaskOperations extends V1HttpHandler {
     else if (post && context.request().pathParameters().containsKey("name")) {
       Integer count = null;
       boolean stop = path.endsWith("/stop");
+      boolean target = path.endsWith("/target-services");
       try {
         JsonDocument body = JsonDocument.newDocument(context.request().bodyAsString());
         if (stop) {
@@ -37,11 +38,14 @@ public final class V1HttpHandlerTaskOperations extends V1HttpHandler {
           if (!body.contains("count") || !body.get("count").isJsonPrimitive()
             || !body.get("count").getAsJsonPrimitive().isNumber()) throw new IllegalArgumentException();
           double value = body.getDouble("count");
-          if (!Double.isFinite(value) || value < 0 || value > Integer.MAX_VALUE || value != Math.floor(value)) throw new IllegalArgumentException();
+          if (!Double.isFinite(value) || value < (target ? -1 : 0) || value > Integer.MAX_VALUE || value != Math.floor(value)) throw new IllegalArgumentException();
           count = (int) value;
         }
-      } catch (RuntimeException exception) { this.send400Response(context, "请提供非负整数 count，或布尔值 clearMinimum"); return; }
-      result = operations.submit(user.getUniqueId(), context.request().pathParameters().get("name"), count, stop);
+      } catch (RuntimeException exception) {
+        this.send400Response(context, target ? "count 必须是 -1 至 2147483647 的整数" : "请提供非负整数 count，或布尔值 clearMinimum");
+        return;
+      }
+      result = operations.submit(user.getUniqueId(), context.request().pathParameters().get("name"), count, stop, target);
     } else if (!post && context.request().pathParameters().containsKey("id")) {
       result = operations.result(context.request().pathParameters().get("id"), user.getUniqueId());
     } else result = TaskOperations.error(405, "请求方法不支持");

@@ -1,0 +1,17 @@
+{
+  "runtimeModule": true,
+  "group": "de.dytanic.cloudnet.modules",
+  "name": "CloudNet-Target",
+  "version": "1.0",
+  "author": "CloudNetService",
+  "website": "https://cloudnetservice.eu",
+  "description": "Maintains task target counts and stops surplus empty services",
+  "main": "de.dytanic.cloudnet.ext.target.CloudNetTargetModule",
+  "dependencies": [
+    {
+      "group": "de.dytanic.cloudnet.modules",
+      "name": "CloudNet-Bridge",
+      "version": "1.2"
+    }
+  ]
+}

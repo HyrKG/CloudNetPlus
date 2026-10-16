@@ -102,6 +102,7 @@ public final class CloudNetRestModule extends NodeCloudNetModule {
       .registerHandler("/api/v1/cluster/{node}/command", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerNodeOperations())
       .registerHandler("/api/v1/task-operations/{id}", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
       .registerHandler("/api/v1/tasks/{name}/minimum-services", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
+      .registerHandler("/api/v1/tasks/{name}/target-services", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
       .registerHandler("/api/v1/tasks/{name}/stop", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
       .registerHandler("/api/v1/tasks/{name}/services", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskServices())
       .registerHandler("/api/v1/modules", IHttpHandler.PRIORITY_NORMAL,
