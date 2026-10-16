@@ -1,697 +1,733 @@
-swagger: "2.0"
+swagger: '2.0'
 info:
-  description: "The first version REST API documentation"
-  version: "1.0"
-  title: "CloudNet 3 HTTP/HTTPS REST API"
-  license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-host: "cloudnetservice.eu"
-basePath: "/api/v1"
-tags:
-  - name: "pet"
-    description: "Everything about your Pets"
-    externalDocs:
-      description: "Find out more"
-      url: "http://swagger.io"
-  - name: "store"
-    description: "Access to Petstore orders"
-  - name: "user"
-    description: "Operations about user"
-    externalDocs:
-      description: "Find out more about our store"
-      url: "http://swagger.io"
-schemes:
-  - "https"
-  - "http"
-paths:
-  /pet:
-    post:
-      tags:
-        - "pet"
-      summary: "Add a new pet to the store"
-      description: ""
-      operationId: "addPet"
-      consumes:
-        - "application/json"
-        - "application/xml"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "Pet object that needs to be added to the store"
-          required: true
-          schema:
-            $ref: "#/definitions/Pet"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-    put:
-      tags:
-        - "pet"
-      summary: "Update an existing pet"
-      description: ""
-      operationId: "updatePet"
-      consumes:
-        - "application/json"
-        - "application/xml"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "Pet object that needs to be added to the store"
-          required: true
-          schema:
-            $ref: "#/definitions/Pet"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-        405:
-          description: "Validation exception"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-  /pet/findByStatus:
-    get:
-      tags:
-        - "pet"
-      summary: "Finds Pets by status"
-      description: "Multiple status values can be provided with comma separated strings"
-      operationId: "findPetsByStatus"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "status"
-          in: "query"
-          description: "Status values that need to be considered for filter"
-          required: true
-          type: "array"
-          items:
-            type: "string"
-            enum:
-              - "available"
-              - "pending"
-              - "sold"
-            default: "available"
-          collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid status value"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-  /pet/findByTags:
-    get:
-      tags:
-        - "pet"
-      summary: "Finds Pets by tags"
-      description: "Muliple tags can be provided with comma separated strings. Use         tag1, tag2, tag3 for testing."
-      operationId: "findPetsByTags"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "tags"
-          in: "query"
-          description: "Tags to filter by"
-          required: true
-          type: "array"
-          items:
-            type: "string"
-          collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid tag value"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-      deprecated: true
-  /pet/{petId}:
-    get:
-      tags:
-        - "pet"
-      summary: "Find pet by ID"
-      description: "Returns a single pet"
-      operationId: "getPetById"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "petId"
-          in: "path"
-          description: "ID of pet to return"
-          required: true
-          type: "integer"
-          format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-        - api_key: [ ]
-    post:
-      tags:
-        - "pet"
-      summary: "Updates a pet in the store with form data"
-      description: ""
-      operationId: "updatePetWithForm"
-      consumes:
-        - "application/x-www-form-urlencoded"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "petId"
-          in: "path"
-          description: "ID of pet that needs to be updated"
-          required: true
-          type: "integer"
-          format: "int64"
-        - name: "name"
-          in: "formData"
-          description: "Updated name of the pet"
-          required: false
-          type: "string"
-        - name: "status"
-          in: "formData"
-          description: "Updated status of the pet"
-          required: false
-          type: "string"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-    delete:
-      tags:
-        - "pet"
-      summary: "Deletes a pet"
-      description: ""
-      operationId: "deletePet"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "api_key"
-          in: "header"
-          required: false
-          type: "string"
-        - name: "petId"
-          in: "path"
-          description: "Pet id to delete"
-          required: true
-          type: "integer"
-          format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-  /pet/{petId}/uploadImage:
-    post:
-      tags:
-        - "pet"
-      summary: "uploads an image"
-      description: ""
-      operationId: "uploadFile"
-      consumes:
-        - "multipart/form-data"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "petId"
-          in: "path"
-          description: "ID of pet to update"
-          required: true
-          type: "integer"
-          format: "int64"
-        - name: "additionalMetadata"
-          in: "formData"
-          description: "Additional data to pass to server"
-          required: false
-          type: "string"
-        - name: "file"
-          in: "formData"
-          description: "file to upload"
-          required: false
-          type: "file"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ApiResponse"
-      security:
-        - petstore_auth:
-            - "write:pets"
-            - "read:pets"
-  /store/inventory:
-    get:
-      tags:
-        - "store"
-      summary: "Returns pet inventories by status"
-      description: "Returns a map of status codes to quantities"
-      operationId: "getInventory"
-      produces:
-        - "application/json"
-      parameters: [ ]
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "object"
-            additionalProperties:
-              type: "integer"
-              format: "int32"
-      security:
-        - api_key: [ ]
-  /store/order:
-    post:
-      tags:
-        - "store"
-      summary: "Place an order for a pet"
-      description: ""
-      operationId: "placeOrder"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "order placed for purchasing the pet"
-          required: true
-          schema:
-            $ref: "#/definitions/Order"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid Order"
-  /store/order/{orderId}:
-    get:
-      tags:
-        - "store"
-      summary: "Find purchase order by ID"
-      description: "For valid response try integer IDs with value >= 1 and <= 10.         Other values will generated exceptions"
-      operationId: "getOrderById"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "orderId"
-          in: "path"
-          description: "ID of pet that needs to be fetched"
-          required: true
-          type: "integer"
-          maximum: 10.0
-          minimum: 1.0
-          format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-    delete:
-      tags:
-        - "store"
-      summary: "Delete purchase order by ID"
-      description: "For valid response try integer IDs with positive integer value.         Negative or non-integer values will generate API errors"
-      operationId: "deleteOrder"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "orderId"
-          in: "path"
-          description: "ID of the order that needs to be deleted"
-          required: true
-          type: "integer"
-          minimum: 1.0
-          format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-  /user:
-    post:
-      tags:
-        - "user"
-      summary: "Create user"
-      description: "This can only be done by the logged in user."
-      operationId: "createUser"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "Created user object"
-          required: true
-          schema:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/createWithArray:
-    post:
-      tags:
-        - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithArrayInput"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "List of user object"
-          required: true
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/createWithList:
-    post:
-      tags:
-        - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithListInput"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - in: "body"
-          name: "body"
-          description: "List of user object"
-          required: true
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/login:
-    get:
-      tags:
-        - "user"
-      summary: "Logs user into the system"
-      description: ""
-      operationId: "loginUser"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "username"
-          in: "query"
-          description: "The user name for login"
-          required: true
-          type: "string"
-        - name: "password"
-          in: "query"
-          description: "The password for login in clear text"
-          required: true
-          type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "string"
-          headers:
-            X-Rate-Limit:
-              type: "integer"
-              format: "int32"
-              description: "calls per hour allowed by the user"
-            X-Expires-After:
-              type: "string"
-              format: "date-time"
-              description: "date in UTC when token expires"
-        400:
-          description: "Invalid username/password supplied"
-  /user/logout:
-    get:
-      tags:
-        - "user"
-      summary: "Logs out current logged in user session"
-      description: ""
-      operationId: "logoutUser"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters: [ ]
-      responses:
-        default:
-          description: "successful operation"
-  /user/{username}:
-    get:
-      tags:
-        - "user"
-      summary: "Get user by user name"
-      description: ""
-      operationId: "getUserByName"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "username"
-          in: "path"
-          description: "The name that needs to be fetched. Use user1 for testing. "
-          required: true
-          type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/User"
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-    put:
-      tags:
-        - "user"
-      summary: "Updated user"
-      description: "This can only be done by the logged in user."
-      operationId: "updateUser"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "username"
-          in: "path"
-          description: "name that need to be updated"
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Updated user object"
-          required: true
-          schema:
-            $ref: "#/definitions/User"
-      responses:
-        400:
-          description: "Invalid user supplied"
-        404:
-          description: "User not found"
-    delete:
-      tags:
-        - "user"
-      summary: "Delete user"
-      description: "This can only be done by the logged in user."
-      operationId: "deleteUser"
-      produces:
-        - "application/xml"
-        - "application/json"
-      parameters:
-        - name: "username"
-          in: "path"
-          description: "The name that needs to be deleted"
-          required: true
-          type: "string"
-      responses:
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
+  title: CloudNet REST v1 运维接口
+  version: '1.0'
+  description: >-
+    CloudNet-Web 使用的运维接口。Cookie 会话、任务和分组沿用现有实现。
+    实例 GET 操作继续兼容，网页操作使用 POST。完整行为见 cloudnet-web/OPERATIONS.md。
+basePath: /api/v1
+schemes: [http, https]
+produces: [application/json]
+security:
+  - session: []
 securityDefinitions:
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
-    flow: "implicit"
-    scopes:
-      write:pets: "modify pets in your account"
-      read:pets: "read your pets"
-  api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
+  session:
+    type: apiKey
+    in: header
+    name: Cookie
+    description: 'CloudNet-REST_V1-Session=<登录签发的凭证>'
+paths:
+  /metrics:
+    get:
+      summary: 查询各节点实际资源采样
+      description: >-
+        权限 cloudnet.http.v1.metrics.get。节点 REST 每 30 秒采集并缓存，跨节点查询返回各自采样时间。
+        单个节点失败不会影响其他结果。CPU 以整机为 100%，内存为字节，配置额度为 MiB。
+        首次 CPU / IO 差值或进程指标不可用时为 -1。IO 为设备累计字节差值除以采样间隔。
+        前端将超过 90 秒的采样视为过期。
+      responses:
+        '200': {description: 各节点缓存及不可用原因, schema: {$ref: '#/definitions/MetricsResponse'}}
+        '401': {description: 未登录}
+        '403': {description: 无资源读取权限}
+        '503': {description: 入口资源采集尚未启动}
+  /metrics/history:
+    get:
+      summary: 查询最近 24 小时内的节点分钟历史
+      description: >-
+        沿用 cloudnet.http.v1.metrics.get；各节点本地按小时 JSON 文件保存分钟平均值和峰值。
+        不含实例快照。缺失时间不补零，单个节点不可用独立返回原因。
+      parameters:
+        - {name: node, in: query, required: false, type: string, description: 节点 ID；省略查询全部节点}
+        - {name: range, in: query, required: false, type: string, enum: [15m, 1h, 6h, 24h], default: 1h}
+      responses:
+        '200': {description: 分钟历史与查询时间, schema: {$ref: '#/definitions/MetricsHistoryResponse'}}
+        '401': {description: 未登录}
+        '403': {description: 无资源读取权限}
+        '503': {description: 入口资源采集尚未启动}
+  /metrics/services/history:
+    get:
+      summary: 批量查询服务器最近 24 小时内的分钟历史
+      description: >-
+        沿用 cloudnet.http.v1.metrics.get，入口与目标节点均检查权限。
+        TPS、进程 CPU、进程内存、在线人数每 30 秒采样，保存分钟平均值、峰值和有效样本数。
+        缺失、不支持、过期及停止期间不补零；历史按实例 UUID 隔离。
+      parameters:
+        - name: service
+          in: query
+          required: true
+          type: array
+          collectionFormat: multi
+          items: {type: string, format: uuid}
+          description: 实例 UUID，重复参数可查询多个实例；前端每批最多 64 个以限制 URL 长度
+        - {name: range, in: query, required: false, type: string, enum: [15m, 1h, 6h, 24h], default: 1h}
+      responses:
+        '200': {description: 各节点状态及按实例 UUID 组织的分钟历史, schema: {$ref: '#/definitions/ServiceHistoryResponse'}}
+        '400': {description: 未提供实例 UUID 或 UUID 无效}
+        '401': {description: 未登录}
+        '403': {description: 无资源读取权限}
+        '503': {description: 入口资源采集尚未启动}
+  /metrics/players/history:
+    get:
+      summary: 查询节点及任务在线人数的分钟汇总历史
+      description: >-
+        沿用 cloudnet.http.v1.metrics.get，入口与目标节点均检查权限。
+        节点总人数只统计游戏服；tasks 为各任务在本节点的全部运行实例人数贡献，包含代理。
+        每 30 秒先汇总再记录分钟平均值、峰值及有效样本数，保留 24 小时，与实例 UUID 无关。
+        快照超过 90 秒或人数缺失时跳过对应汇总采样；已知无实例时记录 0。
+        前端只合并所有返回节点均有有效贡献的任务分钟平均值，不相加各节点峰值。
+      parameters:
+        - {name: range, in: query, required: false, type: string, enum: [15m, 1h, 6h, 24h], default: 1h}
+      responses:
+        '200': {description: 各节点人数及任务本地贡献历史, schema: {$ref: '#/definitions/PlayerHistoryResponse'}}
+        '401': {description: 未登录}
+        '403': {description: 无资源读取权限}
+        '503': {description: 入口采集尚未启动}
+  /metrics/tasks/history:
+    get:
+      summary: 批量读取任务人数、进程内存与 CPU 逻辑核历史
+      description: >-
+        沿用 cloudnet.http.v1.metrics.get，目标节点再次检查权限。每 30 秒按任务汇总，按分钟保存，保留 24 小时。
+        CPU 为逻辑核数，内存为字节。跨节点仅合计分钟平均值，不相加峰值；必要节点缺失时留断点。
+        复用原任务人数历史目录，资源字段从升级后开始积累。
+      parameters:
+        - name: task
+          in: query
+          required: true
+          type: array
+          collectionFormat: multi
+          items: {type: string}
+          description: 任务名称，可重复指定；节点内任务表仍使用同一接口
+        - {name: range, in: query, type: string, enum: [15m, 1h, 6h, 24h], default: 1h}
+        - {name: node, in: query, type: string, description: 可选节点 ID；省略查询所有节点}
+      responses:
+        '200': {description: 节点状态及任务分钟汇总, schema: {$ref: '#/definitions/TaskHistoryResponse'}}
+        '400': {description: 未提供任务名称}
+        '401': {description: 未登录}
+        '403': {description: 无资源读取权限}
+        '503': {description: 入口采集尚未启动}
+  /auth:
+    get:
+      summary: 使用 Basic 账号密码建立 Cookie 会话
+      security: []
+      parameters:
+        - {name: Authorization, in: header, required: true, type: string, description: 'Basic base64(username:password)'}
+      responses:
+        '200': {description: 登录成功并签发 Cookie}
+        '401': {description: 登录失败}
+  /logout:
+    get:
+      summary: 清除当前 Cookie 并关闭对应控制台连接
+      responses:
+        '200': {description: 已退出}
+  /status:
+    get:
+      summary: 集群入口节点状态
+      description: '权限 cloudnet.http.v1.status.get'
+      responses:
+        '200': {description: 节点身份、版本、快照、模块及服务计数}
+  /tasks:
+    get:
+      summary: 查询永久任务
+      description: '权限 cloudnet.http.v1.tasks.get'
+      responses:
+        '200':
+          description: 完整任务配置列表
+          schema: {type: array, items: {$ref: '#/definitions/Configuration'}}
+    post:
+      summary: 创建或更新永久任务
+      description: '权限 cloudnet.http.v1.tasks.post；提交完整原配置，保留 properties 等字段。'
+      consumes: [application/json]
+      parameters:
+        - {name: body, in: body, required: true, schema: {$ref: '#/definitions/Configuration'}}
+      responses:
+        '200': {description: 已保存}
+        '201': {description: 已保存（沿用原接口状态码）}
+        '400': {description: 配置无效}
+  /tasks/{name}:
+    parameters:
+      - {name: name, in: path, required: true, type: string}
+    get:
+      summary: 查询任务
+      responses:
+        '200': {description: '对象 {task: Configuration}；未找到时 task 为 null'}
+    delete:
+      summary: 删除永久任务
+      description: '权限 cloudnet.http.v1.tasks.delete；实例处理沿用核心行为。'
+      responses:
+        '200': {description: 已处理}
+  /tasks/{name}/services:
+    parameters:
+      - {name: name, in: path, required: true, type: string}
+    post:
+      summary: 临时创建并启动指定数量的实例
+      description: '权限 cloudnet.http.v1.tasks.services.post；不修改永久任务，可部分成功。'
+      consumes: [application/json]
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [count]
+            properties:
+              count: {type: integer, minimum: 1}
+              nodeUniqueId: {type: string, x-nullable: true, description: 留空按任务配置自动调度}
+      responses:
+        '200':
+          description: 各实例的创建及启动提交结果；实际生命周期需重新查询
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    success: {type: boolean}
+                    service: {type: object, additionalProperties: true}
+                    reason: {type: string}
+        '400': {description: 数量或请求体无效}
+        '403': {description: 缺少权限}
+        '404': {description: 任务不存在}
+  /tasks/{name}/minimum-services:
+    parameters:
+      - {name: name, in: path, required: true, type: string}
+    post:
+      summary: 后台修改任务最低运行数量
+      description: >-
+        权限 cloudnet.http.v1.tasks.post。执行时复制最新完整配置，仅修改 minServiceCount；提高由核心补开，降低不主动停止。
+        关闭页面不取消后台执行。2 批并发、8 批排队，同一入口不允许同任务未完成操作重叠。
+      consumes: [application/json]
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [count]
+            properties:
+              count: {type: integer, minimum: 0, maximum: 2147483647}
+      responses:
+        '202': {description: 已接受后台处理，返回操作 ID, schema: {$ref: '#/definitions/TaskOperationAccepted'}}
+        '400': {description: 数量无效}
+        '401': {description: 未登录}
+        '403': {description: 缺少权限}
+        '404': {description: 任务不存在}
+        '409': {description: 同任务已有未完成操作}
+        '503': {description: 队列满载或模块未启动}
+  /tasks/{name}/stop:
+    parameters:
+      - {name: name, in: path, required: true, type: string}
+    post:
+      summary: 后台逐台停止任务运行实例，可先清零最低数量
+      description: >-
+        权限 cloudnet.http.v1.services.operation.post；clearMinimum=true 还需 cloudnet.http.v1.tasks.post。
+        执行前重新检查权限。清零保存被拒绝、主节点同步未确认或主节点变化时不继续停止。
+        固定执行时运行实例名单，逐台重查状态，沿用 autoDeleteOnStop，不强制删除保留型实例。
+        部分停止失败不回滚 0；不追停后续新实例，不取消核心已开始的启动流程。
+      consumes: [application/json]
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [clearMinimum]
+            properties:
+              clearMinimum: {type: boolean}
+      responses:
+        '202': {description: 已接受后台处理，不表示已关闭实例, schema: {$ref: '#/definitions/TaskOperationAccepted'}}
+        '400': {description: 参数无效}
+        '401': {description: 未登录}
+        '403': {description: 缺少权限}
+        '404': {description: 任务不存在}
+        '409': {description: 同任务已有未完成操作}
+        '503': {description: 队列满载或模块未启动}
+  /task-operations/{id}:
+    get:
+      summary: 查询当前用户提交的后台任务操作
+      description: >-
+        仅提交用户且仍持有所需权限可读；前端每秒查询至 completed。
+        完成结果仅在入口内存保留 10 分钟、最多 32 批。REST 停止不继续提交，重启不重放。
+        submitted 仅表示 provider 已接受提交，实际状态需查询服务列表。
+      parameters:
+        - {name: id, in: path, required: true, type: string, format: uuid}
+      responses:
+        '200': {description: 批次进度和逐实例提交结果, schema: {$ref: '#/definitions/TaskOperation'}}
+        '401': {description: 未登录}
+        '403': {description: 已失去所需权限}
+        '404': {description: 不是提交用户、已过期或入口重启}
+        '503': {description: 模块未启动}
+  /groups:
+    get:
+      summary: 查询分组
+      description: '权限 cloudnet.http.v1.groups.get'
+      responses:
+        '200':
+          description: 完整分组配置列表
+          schema: {type: array, items: {$ref: '#/definitions/Configuration'}}
+    post:
+      summary: 创建或更新分组
+      description: '权限 cloudnet.http.v1.groups.post'
+      consumes: [application/json]
+      parameters:
+        - {name: body, in: body, required: true, schema: {$ref: '#/definitions/Configuration'}}
+      responses:
+        '200': {description: 已保存}
+        '201': {description: 已保存（沿用原接口状态码）}
+  /groups/{name}:
+    parameters:
+      - {name: name, in: path, required: true, type: string}
+    get:
+      summary: 查询分组
+      responses:
+        '200': {description: '对象 {group: Configuration}；未找到时 group 为 null'}
+    delete:
+      summary: 删除分组
+      description: '权限 cloudnet.http.v1.groups.delete'
+      responses:
+        '200': {description: 已处理}
+  /cluster:
+    get:
+      summary: 查询集群节点与资源快照
+      description: '权限 cloudnet.http.v1.cluster.get'
+      responses:
+        '200': {description: node 与 nodeInfoSnapshot 的列表}
+    post:
+      summary: 将节点加入入口节点的集群配置
+      description: '权限 cloudnet.http.v1.cluster.post 及原有 cloudnet.command.cluster'
+      consumes: [application/json]
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [nodeUniqueId, host, port]
+            properties:
+              nodeUniqueId: {type: string}
+              host: {type: string}
+              port: {type: integer, minimum: 1, maximum: 65535}
+      responses:
+        '200': {description: 命令已处理, schema: {$ref: '#/definitions/CommandResult'}}
+        '400': {description: 参数无效或命令执行失败}
+  /cluster/{node}:
+    parameters:
+      - {name: node, in: path, required: true, type: string}
+    get:
+      summary: 查询节点
+      responses:
+        '200': {description: 匹配节点的列表}
+    delete:
+      summary: 从入口节点集群配置移除节点
+      description: '权限 cloudnet.http.v1.cluster.delete 及原有 cloudnet.command.cluster'
+      responses:
+        '200': {description: 命令已处理, schema: {$ref: '#/definitions/CommandResult'}}
+        '400': {description: 节点不存在或命令执行失败}
+  /cluster/{node}/command:
+    parameters:
+      - {name: node, in: path, required: true, type: string}
+    post:
+      summary: 以当前账号在指定节点执行命令
+      description: >-
+        权限 cloudnet.http.v1.cluster.post 及命令本身的权限；目标节点需安装新版 REST。
+        当前输出通过 HTTP 返回，异步输出继续写入节点日志。不会改用全权限控制台发送者。
+      consumes: [text/plain]
+      parameters:
+        - {name: command, in: body, required: true, schema: {type: string}}
+      responses:
+        '200': {description: 命令已提交, schema: {$ref: '#/definitions/CommandResult'}}
+        '400': {description: 命令无效、权限不足或目标不可用}
+  /services:
+    get:
+      summary: 查询实例
+      description: >-
+        权限 cloudnet.http.v1.services.get。快照可附加 webOperation（WebServiceOperation），
+        表示通过本入口提交的停止进度，供所有有读取权限的管理员共享；原 lifeCycle 不变。
+      parameters:
+        - {name: name, in: query, type: string}
+        - {name: task, in: query, type: string}
+        - {name: node, in: query, type: string}
+      responses:
+        '200': {description: ServiceInfoSnapshot 列表}
+  /services/{uuid}:
+    parameters:
+      - {name: uuid, in: path, required: true, type: string}
+    get:
+      summary: 查询实例详情
+      description: 快照可附加 webOperation（WebServiceOperation）；停止请求返回不代表进程已经退出。
+      responses:
+        '200': {description: ServiceInfoSnapshot}
+        '404': {description: 实例不存在}
+  /services/{uuid}/{operation}:
+    parameters:
+      - {name: uuid, in: path, required: true, type: string}
+      - name: operation
+        in: path
+        required: true
+        type: string
+        enum: [start, stop, restart, kill, delete, includeTemplates, includeInclusions, deployResources, command, log, log_json]
+    get:
+      summary: 兼容的原实例操作与日志接口
+      description: '权限 cloudnet.http.v1.services.operation.get；仅支持 start、stop、restart、delete、log、log_json。'
+      responses:
+        '200': {description: 实例快照或日志}
+        '409': {description: 停止已经提交或当前状态不允许操作}
+        '503': {description: 停止提交失败或结果未确认，请重新读取实例状态}
+    post:
+      summary: 提交实例操作或服务命令
+      description: >-
+        权限 cloudnet.http.v1.services.operation.post；支持 start、stop、restart、kill、delete、
+        includeTemplates、includeInclusions、deployResources、command。命令必须发往运行中的实例。
+        成功仅代表操作已提交，实际状态需重新读取。
+        stop 与任务批量停止共用入口记录，重复提交返回 409；停止未确认时拒绝 start/restart，kill/delete 保留。
+        超过 60 秒或提交结果不明时 webOperation.status 为 unconfirmed，不自动重试或解除重复停止限制。
+        stop 提交响应附加 pending 布尔值：false 表示明确未提交，true 表示已提交、重复停止或结果不明，须继续读取实例状态。
+      consumes: [text/plain]
+      parameters:
+        - {name: command, in: body, required: false, schema: {type: string}, description: 仅 command 操作需要 UTF-8 命令文本}
+      responses:
+        '200': {description: 已提交, schema: {$ref: '#/definitions/Success'}}
+        '400': {description: 无效操作或服务未运行}
+        '403': {description: 缺少权限}
+        '404': {description: 实例不存在}
+        '409': {description: 停止已经提交或当前状态不允许操作}
+        '503': {description: 节点不可达或停止结果未确认，reason 说明是否可能已执行}
+  /console/{type}/{id}:
+    parameters:
+      - {name: type, in: path, required: true, type: string, enum: [node, service]}
+      - {name: id, in: path, required: true, type: string, description: 节点 ID 或服务 UUID}
+    get:
+      summary: 检查读取权限或建立控制台 WebSocket
+      description: >-
+        普通 HTTP 返回权限检查结果；携带 WebSocket Upgrade 则检查同源 Origin/Host 后升级。
+        节点权限 cloudnet.http.v1.console.node.get；服务权限 cloudnet.http.v1.services.operation.get。
+        推送 snapshot(streamId,firstSequence,sequence,lines)、line(sequence,line)、state(state)、error(code,message)。
+        客户端每 15 秒发送文本 ping；每帧增加 delivery，客户端处理后发送 ack:<delivery>。
+        未确认、初始化缓冲及转发队列各限制为 1024 帧/4 MiB，超限以 4504 断开并手动重连。命令仍由 HTTP 提交。
+      responses:
+        '101': {description: 已升级 WebSocket}
+        '200': {description: 权限检查通过, schema: {$ref: '#/definitions/Success'}}
+        '401': {description: 未登录}
+        '403': {description: 无权限或非同源请求}
+  /console/{type}/{id}/logs:
+    parameters:
+      - {name: type, in: path, required: true, type: string, enum: [node, service]}
+      - {name: id, in: path, required: true, type: string}
+    get:
+      summary: 列出既有节点或服务日志文件
+      description: >-
+        沿用对应控制台读取权限，入口与目标节点均检查。节点读取 local/logs；服务读取工作目录
+        logs、.wrapper/logs 及根目录的日志文件，包含 .log、.log.N、.log.gz。不提供任意路径读取。
+      responses:
+        '200': {description: 文件按修改时间倒序, schema: {type: object, properties: {files: {type: array, items: {$ref: '#/definitions/ConsoleLogFile'}}}}}
+        '401': {description: 未登录}
+        '403': {description: 无控制台读取权限}
+        '404': {description: 对象或日志目录不存在}
+        '503': {description: 节点不可达、读取失败或目标未升级 REST}
+  /console/{type}/{id}/logs/{fileId}:
+    parameters:
+      - {name: type, in: path, required: true, type: string, enum: [node, service]}
+      - {name: id, in: path, required: true, type: string}
+      - {name: fileId, in: path, required: true, type: string, description: 文件列表返回的标识}
+    get:
+      summary: 分页回看现有日志
+      description: 沿用控制台读取权限；默认末尾 500 行，返回游标用于读取前一页。历史只读，不新增归档。
+      parameters:
+        - {name: cursor, in: query, required: false, type: string, description: 上一页返回的 nextCursor；不得自行构造}
+      responses:
+        '200': {description: 按原文件顺序排列的一页日志, schema: {$ref: '#/definitions/ConsoleLogPage'}}
+        '400': {description: 标识或游标无效}
+        '401': {description: 未登录}
+        '403': {description: 无控制台读取权限}
+        '404': {description: 对象、目录或日志文件不存在}
+        '409': {description: 文件已轮转或截断，需要重新打开}
+        '503': {description: 日志读取失败或节点不可达}
+  /local_templates:
+    get:
+      summary: 列出入口节点本地模板供选择
+      description: '权限 cloudnet.http.v1.lt.list.get；本次页面不提供模板文件操作。'
+      responses:
+        '200': {description: '模板列表，各项包含 storage、prefix、name'}
 definitions:
-  Order:
-    type: "object"
+  WebServiceOperation:
+    type: object
+    description: 入口 REST 内存中的停止记录；实际停止或删除后移除，模块重启不恢复，不包含提交者身份。
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      petId:
-        type: "integer"
-        format: "int64"
-      quantity:
-        type: "integer"
-        format: "int32"
-      shipDate:
-        type: "string"
-        format: "date-time"
-      status:
-        type: "string"
-        description: "Order Status"
-        enum:
-          - "placed"
-          - "approved"
-          - "delivered"
-      complete:
-        type: "boolean"
-        default: false
-    xml:
-      name: "Order"
-  Category:
-    type: "object"
+      operation: {type: string, enum: [stop]}
+      status: {type: string, enum: [pending, unconfirmed]}
+      submittedAt: {type: integer, format: int64, description: 登记时间，Unix 毫秒}
+      reason: {type: string, description: 未确认原因；正常等待时可为 null}
+  MetricsResponse:
+    type: object
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Category"
-  User:
-    type: "object"
+      nodes: {type: array, items: {$ref: '#/definitions/NodeMetrics'}}
+  NodeMetrics:
+    type: object
+    required: [nodeUniqueId, status, sampledAt]
+    description: 不可用节点只返回标识、状态、原因和 sampledAt 0；不以零代替未知资源。
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      username:
-        type: "string"
-      firstName:
-        type: "string"
-      lastName:
-        type: "string"
-      email:
-        type: "string"
-      password:
-        type: "string"
-      phone:
-        type: "string"
-      userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
-    xml:
-      name: "User"
-  Tag:
-    type: "object"
+      nodeUniqueId: {type: string}
+      status: {type: string, enum: [available, unavailable]}
+      sampledAt: {type: integer, format: int64, description: Unix 毫秒时间；0 表示无可用采样}
+      reason: {type: string}
+      logicalCpuCount: {type: integer}
+      cpuPercent: {type: number, format: double, description: 整机 CPU 百分比；首次采样 -1}
+      totalMemoryBytes: {type: integer, format: int64}
+      usedMemoryBytes: {type: integer, format: int64}
+      availableMemoryBytes: {type: integer, format: int64}
+      memoryPercent: {type: number, format: double}
+      diskReadBytesPerSecond: {type: number, format: double, description: 磁盘设备合计读取 B/s；未知 -1}
+      diskWriteBytesPerSecond: {type: number, format: double, description: 磁盘设备合计写入 B/s；未知 -1}
+      networkReceiveBytesPerSecond: {type: number, format: double, description: 非本地网卡合计接收 B/s；包含节点间通信；未知 -1}
+      networkSendBytesPerSecond: {type: number, format: double, description: 非本地网卡合计发送 B/s；未知 -1}
+      diskDevices: {type: array, items: {type: string}}
+      networkInterfaces: {type: array, items: {type: string}}
+      diskReason: {type: string}
+      networkReason: {type: string}
+      runningConfiguredMemoryMb: {type: integer, description: RUNNING 实例配置内存之和，MiB}
+      reservedMemoryMb: {type: integer, description: 全部实例配置内存之和，MiB}
+      maxMemoryMb: {type: integer, description: CloudNet 节点配置上限，MiB}
+      maxCpuPercent: {type: number, format: double, description: 启动时 CPU 必须低于此阈值}
+      services:
+        type: object
+        description: 实例 UUID 到进程采样的映射
+        additionalProperties: {$ref: '#/definitions/ServiceMetrics'}
+  ServiceMetrics:
+    type: object
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Tag"
-  Pet:
-    type: "object"
-    required:
-      - "name"
-      - "photoUrls"
+      pid: {type: integer}
+      cpuPercent: {type: number, format: double, description: 进程 CPU 除以节点逻辑 CPU 数后的百分比；未知 -1}
+      residentMemoryBytes: {type: integer, format: int64, description: Linux RSS / Windows 私有工作集；未知 -1}
+      reason: {type: string}
+  MetricsHistoryResponse:
+    type: object
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      category:
-        $ref: "#/definitions/Category"
-      name:
-        type: "string"
-        example: "doggie"
-      photoUrls:
-        type: "array"
-        xml:
-          name: "photoUrl"
-          wrapped: true
+      generatedAt: {type: integer, format: int64}
+      nodes:
+        type: array
         items:
-          type: "string"
-      tags:
-        type: "array"
-        xml:
-          name: "tag"
-          wrapped: true
-        items:
-          $ref: "#/definitions/Tag"
-      status:
-        type: "string"
-        description: "pet status in the store"
-        enum:
-          - "available"
-          - "pending"
-          - "sold"
-    xml:
-      name: "Pet"
-  ApiResponse:
-    type: "object"
+          type: object
+          properties:
+            nodeUniqueId: {type: string}
+            status: {type: string, enum: [available, unavailable]}
+            reason: {type: string}
+            historyReason: {type: string, description: 文件保存或恢复失败的说明}
+            from: {type: integer, format: int64}
+            to: {type: integer, format: int64}
+            step: {type: integer, description: 60000 毫秒}
+            points:
+              type: array
+              items:
+                type: object
+                properties:
+                  time: {type: integer, format: int64, description: 分钟起点 Unix 毫秒}
+                  devices:
+                    type: object
+                    properties:
+                      diskDevices: {type: array, items: {type: string}}
+                      networkInterfaces: {type: array, items: {type: string}}
+                  values:
+                    type: object
+                    description: cpuPercent、memoryPercent、usedMemoryBytes、totalMemoryBytes 与四种 IO 速率；未知字段省略
+                    additionalProperties:
+                      type: object
+                      properties:
+                        average: {type: number, format: double}
+                        peak: {type: number, format: double}
+                        samples: {type: integer}
+  ServiceHistoryResponse:
+    type: object
     properties:
-      code:
-        type: "integer"
-        format: "int32"
-      type:
-        type: "string"
-      message:
-        type: "string"
-externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"
+      generatedAt: {type: integer, format: int64}
+      from: {type: integer, format: int64}
+      to: {type: integer, format: int64}
+      step: {type: integer, description: 60000 毫秒}
+      nodes:
+        type: array
+        items:
+          type: object
+          properties:
+            nodeUniqueId: {type: string}
+            status: {type: string, enum: [available, unavailable]}
+            reason: {type: string, description: 节点连接、权限或版本不可用原因}
+            historyReason: {type: string, description: 历史目录恢复失败的说明}
+            from: {type: integer, format: int64}
+            to: {type: integer, format: int64}
+            step: {type: integer}
+            services:
+              type: object
+              description: 本节点已有历史的所请求实例 UUID；无历史的实例不在映射中
+              additionalProperties:
+                type: object
+                properties:
+                  historyReason: {type: string, description: 保存、恢复或清理失败的说明}
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        time: {type: integer, format: int64, description: 分钟起点 Unix 毫秒}
+                        values:
+                          type: object
+                          description: TPS-1m、TPS-5m、TPS-15m、cpuPercent、residentMemoryBytes、Online-Count；未知字段省略
+                          additionalProperties:
+                            type: object
+                            properties:
+                              average: {type: number, format: double}
+                              peak: {type: number, format: double}
+                              samples: {type: integer}
+  PlayerHistoryResponse:
+    type: object
+    properties:
+      generatedAt: {type: integer, format: int64}
+      from: {type: integer, format: int64}
+      to: {type: integer, format: int64}
+      step: {type: integer, description: 60000 毫秒}
+      nodes:
+        type: array
+        items:
+          type: object
+          properties:
+            nodeUniqueId: {type: string}
+            status: {type: string, enum: [available, unavailable]}
+            reason: {type: string, description: 节点连接、权限或版本不可用原因}
+            historyReason: {type: string, description: 人数历史文件保存、恢复或清理失败原因}
+            samplingReason: {type: string, description: 最近一次采集失败或人数字段缺失、过期原因}
+            sampledAt: {type: integer, format: int64, description: 最近一次执行人数汇总的 Unix 毫秒时间，不保证所有汇总均有效}
+            from: {type: integer, format: int64}
+            to: {type: integer, format: int64}
+            step: {type: integer}
+            points:
+              type: array
+              description: 本节点全部游戏服的人数汇总；不叠加代理
+              items: {$ref: '#/definitions/PlayerCountPoint'}
+            tasks:
+              type: object
+              description: 按任务名称组织的本地贡献；含当前已配置任务及保留期内的历史任务
+              additionalProperties:
+                type: object
+                properties:
+                  historyReason: {type: string}
+                  points: {type: array, items: {$ref: '#/definitions/PlayerCountPoint'}}
+  PlayerCountPoint:
+    type: object
+    properties:
+      time: {type: integer, format: int64, description: 分钟起点 Unix 毫秒}
+      values:
+        type: object
+        properties:
+          Online-Count:
+            type: object
+            properties:
+              average: {type: number, format: double, description: 本地总人数的分钟平均值，允许小数}
+              peak: {type: number, format: double, description: 本地总人数的分钟峰值，不能相加得到跨节点任务峰值}
+              samples: {type: integer, description: 该分钟有效汇总样本数}
+  ConsoleLogFile:
+    type: object
+    properties:
+      id: {type: string}
+      name: {type: string, description: 日志范围内的相对名称}
+      size: {type: integer, format: int64, description: 原文件字节数；压缩文件为压缩后大小}
+      modifiedAt: {type: integer, format: int64}
+  ConsoleLogPage:
+    type: object
+    properties:
+      lines: {type: array, items: {type: string}, maxItems: 500}
+      nextCursor: {type: string, x-nullable: true, description: null 表示已到文件开头}
+      startLine: {type: integer, format: int64}
+      endLine: {type: integer, format: int64}
+  Success:
+    type: object
+    properties:
+      success: {type: boolean}
+  CommandResult:
+    type: object
+    properties:
+      success: {type: boolean}
+      receivedMessages: {type: array, items: {type: string}}
+      reason: {type: string, x-nullable: true}
+  Configuration:
+    type: object
+    required: [name]
+    additionalProperties: true
+    description: 完整的原有 ServiceTask 或 GroupConfiguration；任务还需要 processConfiguration。
+    properties:
+      name: {type: string}
+      properties: {type: object, additionalProperties: true}
+      templates: {type: array, items: {type: object, additionalProperties: true}}
+      includes: {type: array, items: {type: object, additionalProperties: true}}
+      deployments: {type: array, items: {type: object, additionalProperties: true}}
+      minServiceCount: {type: integer, minimum: 0, description: 集群最低运行数量}
+      associatedNodes: {type: array, items: {type: string}, description: 可调度节点；空数组表示全部节点}
+      processConfiguration: {type: object, additionalProperties: true}
+
+  TaskOperationAccepted:
+    type: object
+    properties:
+      code: {type: integer, enum: [202]}
+      id: {type: string, format: uuid}
+  TaskOperation:
+    type: object
+    properties:
+      id: {type: string, format: uuid}
+      task: {type: string}
+      action: {type: string, enum: [minimum, stop, clear-stop]}
+      status: {type: string, enum: [queued, saving, stopping, completed]}
+      count: {type: integer, x-nullable: true}
+      minimumSaved: {type: boolean, description: 数量配置已保存，不代表主节点同步或停止已成功}
+      total: {type: integer, description: 本批固定实例数量}
+      reason: {type: string, x-nullable: true}
+      completedAt: {type: integer, format: int64, description: Unix 毫秒；未完成为 0}
+      results:
+        type: array
+        items:
+          type: object
+          properties:
+            id: {type: string, format: uuid}
+            name: {type: string}
+            node: {type: string}
+            status: {type: string, enum: [submitted, skipped, not_submitted]}
+            reason: {type: string, x-nullable: true}
+  TaskMetricAggregate:
+    type: object
+    properties:
+      average: {type: number, format: double}
+      peak: {type: number, format: double, description: 节点本地任务汇总的分钟峰值，不可跨节点相加}
+      samples: {type: integer}
+  TaskHistoryResponse:
+    type: object
+    properties:
+      generatedAt: {type: integer, format: int64}
+      from: {type: integer, format: int64}
+      to: {type: integer, format: int64}
+      step: {type: integer, description: 60000 毫秒}
+      nodes:
+        type: array
+        items:
+          type: object
+          properties:
+            nodeUniqueId: {type: string}
+            status: {type: string, enum: [available, unavailable]}
+            reason: {type: string}
+            historyReason: {type: string}
+            samplingReason: {type: string}
+            sampledAt: {type: integer, format: int64}
+            tasks:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  historyReason: {type: string}
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        time: {type: integer, format: int64}
+                        values:
+                          type: object
+                          properties:
+                            Online-Count: {$ref: '#/definitions/TaskMetricAggregate'}
+                            residentMemoryBytes: {$ref: '#/definitions/TaskMetricAggregate'}
+                            cpuCores: {$ref: '#/definitions/TaskMetricAggregate'}

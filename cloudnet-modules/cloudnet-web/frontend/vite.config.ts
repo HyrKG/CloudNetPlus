@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: env.CLOUDNET_API_TARGET || 'http://127.0.0.1:2813',
-          changeOrigin: true,
+          changeOrigin: false,
+          ws: true,
         },
       },
     },

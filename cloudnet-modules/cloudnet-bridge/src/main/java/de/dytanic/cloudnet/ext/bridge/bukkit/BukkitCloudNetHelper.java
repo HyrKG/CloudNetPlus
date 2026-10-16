@@ -17,6 +17,7 @@
 package de.dytanic.cloudnet.ext.bridge.bukkit;
 
 import com.google.common.base.Preconditions;
+import de.dytanic.cloudnet.common.document.gson.JsonDocument;
 import de.dytanic.cloudnet.driver.network.HostAndPort;
 import de.dytanic.cloudnet.driver.service.ServiceInfoSnapshot;
 import de.dytanic.cloudnet.ext.bridge.BridgeHelper;
@@ -26,6 +27,9 @@ import de.dytanic.cloudnet.ext.bridge.WorldPosition;
 import de.dytanic.cloudnet.ext.bridge.player.NetworkConnectionInfo;
 import de.dytanic.cloudnet.ext.bridge.player.NetworkPlayerServerInfo;
 import de.dytanic.cloudnet.ext.bridge.server.BridgeServerHelper;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,9 +39,13 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
 public final class BukkitCloudNetHelper extends BridgeServerHelper {
+
+  private static final String[] TPS_KEYS = {"TPS-1m", "TPS-5m", "TPS-15m"};
+  private static volatile MethodHandle tpsGetter;
 
   private BukkitCloudNetHelper() {
     throw new UnsupportedOperationException();
@@ -47,6 +55,14 @@ public final class BukkitCloudNetHelper extends BridgeServerHelper {
     BridgeServerHelper.setMotd(Bukkit.getMotd());
     BridgeServerHelper.setState("LOBBY");
     BridgeServerHelper.setMaxPlayers(Bukkit.getMaxPlayers());
+    try {
+      tpsGetter = MethodHandles.publicLookup()
+        .findVirtual(Server.class, "getTPS", MethodType.methodType(double[].class))
+        .bindTo(Bukkit.getServer());
+    } catch (NoSuchMethodException | IllegalAccessException exception) {
+      // Paper's public API is optional; keep the Spigot compile dependency.
+      tpsGetter = null;
+    }
   }
 
   public static void initProperties(ServiceInfoSnapshot serviceInfoSnapshot) {
@@ -119,6 +135,32 @@ public final class BukkitCloudNetHelper extends BridgeServerHelper {
 
         return new WorldInfo(world.getUID(), world.getName(), world.getDifficulty().name(), gameRules);
       }).collect(Collectors.toList()));
+
+    appendTps(serviceInfoSnapshot.getProperties());
+  }
+
+  private static void appendTps(JsonDocument properties) {
+    for (String key : TPS_KEYS) {
+      properties.remove(key);
+    }
+    MethodHandle getter = tpsGetter;
+    if (getter == null) {
+      return;
+    }
+    double[] values;
+    try {
+      values = (double[]) getter.invokeExact();
+    } catch (Throwable throwable) {
+      // A failed TPS read must not retain old values or interrupt the service snapshot.
+      return;
+    }
+    if (values != null) {
+      for (int i = 0; i < TPS_KEYS.length && i < values.length; i++) {
+        if (Double.isFinite(values[i]) && values[i] >= 0) {
+          properties.append(TPS_KEYS[i], values[i]);
+        }
+      }
+    }
   }
 
   public static NetworkConnectionInfo createNetworkConnectionInfo(Player player) {

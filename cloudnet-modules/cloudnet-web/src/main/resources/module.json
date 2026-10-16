@@ -11,6 +11,11 @@
       "group": "de.dytanic.cloudnet.modules",
       "name": "CloudNet-REST",
       "version": "1.0"
+    },
+    {
+      "group": "de.dytanic.cloudnet.modules",
+      "name": "CloudNet-Bridge",
+      "version": "1.2"
     }
   ]
 }

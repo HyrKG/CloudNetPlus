@@ -17,11 +17,15 @@
 package de.dytanic.cloudnet.ext.rest.http;
 
 import de.dytanic.cloudnet.driver.CloudNetDriver;
+import com.google.gson.JsonObject;
+import de.dytanic.cloudnet.common.document.gson.JsonDocument;
 import de.dytanic.cloudnet.driver.network.http.HttpResponseCode;
 import de.dytanic.cloudnet.driver.network.http.IHttpContext;
 import de.dytanic.cloudnet.driver.service.ServiceInfoSnapshot;
 import de.dytanic.cloudnet.http.V1HttpHandler;
+import de.dytanic.cloudnet.ext.rest.tasks.TaskOperations;
 import java.util.Queue;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public final class V1HttpHandlerServices extends V1HttpHandler {
@@ -32,7 +36,48 @@ public final class V1HttpHandlerServices extends V1HttpHandler {
 
   @Override
   public void handleOptions(String path, IHttpContext context) {
-    this.sendOptions(context, "OPTIONS, GET");
+    this.sendOptions(context, "OPTIONS, GET, POST");
+  }
+
+  @Override
+  public void handlePost(String path, IHttpContext context) {
+    String uuid = context.request().pathParameters().get("uuid");
+    ServiceInfoSnapshot service = CloudNetDriver.getInstance().getCloudServiceProvider().getCloudServices().stream()
+      .filter(info -> info.getServiceId().getUniqueId().toString().equals(uuid)).findFirst().orElse(null);
+    if (service == null) {
+      context.response().statusCode(404);
+      context.closeAfter(true).cancelNext();
+      return;
+    }
+    String operation = context.request().pathParameters().get("operation");
+    if (operation == null) {
+      this.send400Response(context, "Missing operation");
+      return;
+    }
+    if (this.handleStop(context, service, operation, false)) return;
+    switch (operation) {
+      case "start": service.provider().start(); break;
+      case "restart": service.provider().restart(); break;
+      case "kill": service.provider().kill(); break;
+      case "delete": service.provider().delete(); break;
+      case "includeTemplates": service.provider().includeWaitingServiceTemplates(); break;
+      case "includeInclusions": service.provider().includeWaitingServiceInclusions(); break;
+      case "deployResources": service.provider().deployResources(); break;
+      case "command":
+        String command = context.request().bodyAsString();
+        if (command.trim().isEmpty() || service.getLifeCycle() != de.dytanic.cloudnet.driver.service.ServiceLifeCycle.RUNNING) {
+          this.send400Response(context, "Command must not be empty and service must be running");
+          return;
+        }
+        service.provider().runCommand(command);
+        break;
+      default:
+        this.send400Response(context, "Unknown operation");
+        return;
+    }
+    context.response().statusCode(200).header("Content-Type", "application/json")
+      .body(new JsonDocument("success", true).toByteArray());
+    context.closeAfter(true).cancelNext();
   }
 
   @Override
@@ -65,19 +110,10 @@ public final class V1HttpHandlerServices extends V1HttpHandler {
       }
 
       if (context.request().pathParameters().containsKey("operation")) {
+        if (this.handleStop(context, serviceInfoSnapshot, context.request().pathParameters().get("operation").toLowerCase(), true)) return;
         switch (context.request().pathParameters().get("operation").toLowerCase()) {
           case "start": {
             serviceInfoSnapshot.provider().start();
-            context
-              .response()
-              .statusCode(HttpResponseCode.HTTP_OK)
-              .header("Content-Type", "application/json")
-              .body(GSON.toJson(serviceInfoSnapshot))
-            ;
-          }
-          break;
-          case "stop": {
-            serviceInfoSnapshot.provider().stop();
             context
               .response()
               .statusCode(HttpResponseCode.HTTP_OK)
@@ -138,11 +174,12 @@ public final class V1HttpHandlerServices extends V1HttpHandler {
             break;
         }
       } else {
+        JsonObject snapshot = this.snapshot(serviceInfoSnapshot);
         context
           .response()
-          .statusCode(HttpResponseCode.HTTP_OK)
+          .statusCode(snapshot == null ? HttpResponseCode.HTTP_NOT_FOUND : HttpResponseCode.HTTP_OK)
           .header("Content-Type", "application/json")
-          .body(GSON.toJson(serviceInfoSnapshot))
+          .body(GSON.toJson(snapshot))
         ;
       }
 
@@ -172,11 +209,32 @@ public final class V1HttpHandlerServices extends V1HttpHandler {
           return !context.request().queryParameters().containsKey("node") ||
             context.request().queryParameters().get("node")
               .contains(serviceInfoSnapshot.getServiceId().getNodeUniqueId());
-        }).collect(Collectors.toList())))
+        }).map(this::snapshot).filter(Objects::nonNull).collect(Collectors.toList())))
       .statusCode(200)
       .context()
       .closeAfter(true)
       .cancelNext()
     ;
+  }
+
+  private boolean handleStop(IHttpContext context, ServiceInfoSnapshot service, String operation, boolean legacy) {
+    TaskOperations tasks = TaskOperations.getInstance();
+    if (!"stop".equals(operation) && !"start".equals(operation) && !"restart".equals(operation)) return false;
+    JsonDocument result;
+    if (tasks == null) result = TaskOperations.error(503, "REST 操作模块不可用，未提交操作").append("pending", false);
+    else if ("stop".equals(operation)) result = tasks.stops().submit(service);
+    else if (tasks.stops().isStopping(service.getServiceId().getUniqueId())) {
+      result = TaskOperations.error(409, "实例停止结果尚未确认，不能启动或重启");
+    } else return false;
+    context.response().statusCode(result.getInt("code")).header("Content-Type", "application/json")
+      .body(legacy && result.getInt("code") == 200
+        ? GSON.toJson(this.snapshot(service)) : result.toJson());
+    context.closeAfter(true).cancelNext();
+    return true;
+  }
+
+  private JsonObject snapshot(ServiceInfoSnapshot service) {
+    TaskOperations tasks = TaskOperations.getInstance();
+    return tasks == null ? new JsonDocument(service).toJsonObject() : tasks.stops().snapshot(service);
   }
 }

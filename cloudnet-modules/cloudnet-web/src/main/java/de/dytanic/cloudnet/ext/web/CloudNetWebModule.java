@@ -41,6 +41,10 @@ public final class CloudNetWebModule extends NodeCloudNetModule {
       CloudNetRestModule.registerHttpHandlers(this.webServer);
       WebHttpHandler handler = new WebHttpHandler();
       this.webServer
+        .registerHandler("/api/v1/players", IHttpHandler.PRIORITY_NORMAL,
+          new WebPlayersHttpHandler("cloudnet.http.v1.players"))
+        .registerHandler("/api/v1/players/actions/{action}", IHttpHandler.PRIORITY_NORMAL,
+          new WebPlayersHttpHandler("cloudnet.http.v1.players.operation"))
         .registerHandler("/", IHttpHandler.PRIORITY_LOWEST, handler)
         .registerHandler("/*", IHttpHandler.PRIORITY_LOWEST, handler);
       if (!this.webServer.addListener(new HostAndPort(host, port))) {

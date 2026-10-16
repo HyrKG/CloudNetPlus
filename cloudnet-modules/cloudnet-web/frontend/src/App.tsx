@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
-  ArrowRight, ChevronRight, LayoutDashboard, LoaderCircle, LogOut, Menu, Network, RefreshCw, Server, UserRound, X,
+  ArrowRight, ChevronRight, LayoutDashboard, Layers, LoaderCircle, LogOut, Menu, Network, RefreshCw, Server, Terminal, UserRound, Users, X,
 } from 'lucide-react';
 import { ApiError, api, errorMessage, isUnauthorized } from './api';
-import { Brand, Button, Message, ThemeToggle } from './components';
-import { NodesPage, OverviewPage, ServicesPage } from './pages';
+import { Brand, Button, Message, NotificationProvider, ThemeToggle } from './components';
+import { OverviewPage } from './pages';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router';
+import { ConfigurationPage, ConfigurationsPage } from './configuration';
+import { ConsolePage, NodePage, NodesList, ServicePage, ServicesList } from './operations';
+import { DataProvider, ScrollMemory, WorkspaceContext } from './workspace';
+import { PlayersPage } from './players';
+import { TaskOperationStatus } from './TaskActions';
 
-type View = 'overview' | 'nodes' | 'services';
 const navigation = [
-  { id: 'overview' as const, label: '运行概览', icon: LayoutDashboard },
-  { id: 'nodes' as const, label: '节点管理', icon: Network },
-  { id: 'services' as const, label: '服务管理', icon: Server },
+  { path: '/', label: '运行概览', icon: LayoutDashboard },
+  { path: '/services', label: '服务器', icon: Server },
+  { path: '/players', label: '玩家', icon: Users },
+  { path: '/nodes', label: '节点', icon: Network },
+  { path: '/console', label: '控制台', icon: Terminal },
+  { path: '/groups', label: '配置分组', icon: Layers },
 ];
 
 export default function App() {
@@ -77,11 +85,10 @@ export default function App() {
 
   if (session === 'checking') return <div className="session-loading"><Brand />
     <LoaderCircle size={22} className="spin" /><span>加载中…</span></div>;
-  if (session === 'signed-out') return <Login themeToggle={themeToggle} initialError={sessionError} onLogin={username => {
+  return <NotificationProvider key={session}>{session === 'signed-out' ? <Login themeToggle={themeToggle} initialError={sessionError} onLogin={username => {
     setAccount(username); setSessionError(''); setSession('signed-in');
-  }} />;
-  return <Workspace account={account} onUnauthorized={expireSession} onLogout={() => void logout()}
-    loggingOut={loggingOut} error={sessionError} themeToggle={themeToggle} />;
+  }} /> : <Workspace account={account} onUnauthorized={expireSession} onLogout={() => void logout()}
+    loggingOut={loggingOut} error={sessionError} themeToggle={themeToggle} />}</NotificationProvider>;
 }
 
 function Login({ initialError, onLogin, themeToggle }:
@@ -125,30 +132,29 @@ function Login({ initialError, onLogin, themeToggle }:
 function Workspace({ account, onUnauthorized, onLogout, loggingOut, error, themeToggle }:
   { account: string; onUnauthorized: () => void; onLogout: () => void; loggingOut: boolean; error: string;
     themeToggle: ReactNode }) {
-  const [view, setView] = useState<View>('overview');
+  const location = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [nodeFilter, setNodeFilter] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  function navigate(next: View) { setSelectedId(null); setView(next); setMobileNav(false); }
-  function openService(id: string) { setSelectedId(id); setView('services'); setMobileNav(false); }
-  function openNode(id: string) { setNodeFilter(id); navigate('services'); }
+  useEffect(() => setMobileNav(false), [location.pathname]);
   const props = { onUnauthorized, refreshToken };
+  const navigationPath = location.pathname.startsWith('/tasks') ? '/services' : location.pathname;
+  const current = navigation.find(item => item.path === '/' ? navigationPath === '/' : navigationPath.startsWith(item.path));
+  const resourceKey = location.pathname.split('/').slice(0, 3).join('/');
 
-  return <div className="app-shell">
+  const wall = location.pathname === '/' && new URLSearchParams(location.search).get('display') === 'wall';
+  return <div className={`app-shell ${wall ? 'dashboard-wall' : ''}`}>
     {mobileNav && <button className="sidebar-backdrop" aria-label="关闭导航" onClick={() => setMobileNav(false)} />}
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <div className="sidebar-brand"><Brand /><Button variant="ghost" className="mobile-only icon-button"
         onClick={() => setMobileNav(false)} aria-label="关闭导航"><X size={19} /></Button></div>
       <div className="workspace-label"><span className="workspace-icon"><Network size={16} /></span>
         <div><strong>运维工作区</strong><small>CloudNet 3.4.5</small></div><span className="workspace-badge">WEB</span></div>
-      <span className="nav-section-label">工作空间</span>
-      <nav aria-label="主导航">{navigation.map(item => <button key={item.id}
-        className={`nav-item ${view === item.id ? 'nav-item-active' : ''}`}
-        aria-current={view === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}>
-        <item.icon size={18} /><span>{item.label}</span>{view === item.id && <ChevronRight size={15} />}
-      </button>)}</nav>
+      <span className="nav-section-label">运行管理</span>
+      <nav aria-label="主导航">{navigation.map(item => <div key={item.path}>{item.path === '/groups' && <span className="nav-section-label configuration-nav-label">配置</span>}<NavLink to={item.path} end={item.path === '/'}
+        aria-current={current === item ? 'page' : undefined}
+        className={`nav-item ${current === item ? 'nav-item-active' : ''}`}>
+        <item.icon size={18} /><span>{item.label}</span>{current === item && <ChevronRight size={15} />}
+      </NavLink></div>)}</nav>
       <div className="sidebar-bottom">
         <div className="sidebar-session"><span className="status-dot" />会话已连接<span>REST v1</span></div>
       </div>
@@ -156,19 +162,28 @@ function Workspace({ account, onUnauthorized, onLogout, loggingOut, error, theme
     <div className="main-shell"><header className="topbar"><div className="breadcrumbs">
       <Button variant="ghost" className="mobile-only icon-button" onClick={() => setMobileNav(true)} aria-label="打开导航">
         <Menu size={20} /></Button><span>工作空间</span><ChevronRight size={14} />
-      <strong>{navigation.find(item => item.id === view)?.label}</strong>
+      <strong>{current?.label || '工作空间'}</strong>
     </div><div className="topbar-actions">{themeToggle}<Button variant="ghost" onClick={() => setRefreshToken(value => value + 1)}
       aria-label="刷新当前页面"><RefreshCw size={16} /><span className="desktop-label">刷新</span></Button>
       <span className="topbar-divider" /><span className="account-avatar"><UserRound size={16} /></span>
       <span className="account-name">{account || '管理会话'}</span><Button variant="ghost" className="icon-button"
         onClick={onLogout} busy={loggingOut} aria-label="退出登录">{!loggingOut && <LogOut size={17} />}</Button>
     </div></header>
-      <main className="page-content"><Message>{error}</Message>
-        {view === 'overview' && <OverviewPage {...props} onOpenService={openService} onOpenNode={openNode}
-          onServices={() => navigate('services')} onNodes={() => navigate('nodes')} />}
-        {view === 'nodes' && <NodesPage {...props} onOpenNode={openNode} />}
-        {view === 'services' && <ServicesPage {...props} nodeFilter={nodeFilter} setNodeFilter={setNodeFilter}
-          selectedId={selectedId} onSelect={setSelectedId} />}
+      <main className="page-content"><Message>{error}</Message><WorkspaceContext.Provider value={props}><DataProvider><ScrollMemory /><TaskOperationStatus />
+        <Routes key={resourceKey}>
+          <Route path="/" element={<OverviewPage />} />
+          <Route path="/tasks" element={<Navigate to={`/services${location.search}`} replace />} />
+          <Route path="/tasks/:name/:tab?" element={<ConfigurationPage kind="tasks" />} />
+          <Route path="/groups" element={<ConfigurationsPage />} />
+          <Route path="/groups/:name/:tab?" element={<ConfigurationPage kind="groups" />} />
+          <Route path="/nodes" element={<NodesList />} />
+          <Route path="/nodes/:id/:tab?" element={<NodePage />} />
+          <Route path="/services" element={<ServicesList />} />
+          <Route path="/services/:id/:tab?" element={<ServicePage />} />
+          <Route path="/players" element={<PlayersPage />} />
+          <Route path="/console" element={<ConsolePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes></DataProvider></WorkspaceContext.Provider>
       </main>
     </div>
   </div>;

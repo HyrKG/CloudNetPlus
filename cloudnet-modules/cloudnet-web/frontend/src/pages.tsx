@@ -1,182 +1,75 @@
-import { useEffect, useRef, useState } from 'react';
-import { Activity, ArrowRight, Box, ChevronRight, Cpu, HardDrive, Network, Search, Server } from 'lucide-react';
-import { api, errorMessage, isUnauthorized } from './api';
-import { Button, EmptyState, Message, Meter, PageHeading, Panel } from './components';
-import { addressLabel, hasMetric, lifecycleLabels, memoryMb, percent, serviceName, timeLabel } from './format';
-import { operationLabels, ServiceDetail, ServiceTable, type PendingOperation } from './services';
-import type { ClusterEntry, ServiceOperation } from './types';
-import { usePolling } from './usePolling';
+import { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { Button, EmptyState, PageHeading, Panel } from './components';
+import { FleetErrors, fresh, NodeTable, Summary, TaskTable, useFleet } from './fleet';
+import { Donut, topSlices, useChartColors, type Slice } from './charts';
+import { hasMetric, lifecycleLabels, memoryBytes, memoryMb, percent } from './format';
+import { MetricsTrends } from './MetricsTrends';
+import { PlayerTrends } from './PlayerTrends';
+import { resourceUrl } from './workspace';
 
-interface PageProps { onUnauthorized: () => void; refreshToken: number }
-
-async function loadOverview(signal: AbortSignal) {
-  const [status, nodes, services] = await Promise.all([api.status(signal), api.nodes(signal), api.services(signal)]);
-  return { status, nodes, services };
-}
-
-function UpdateLabel({ updatedAt, refreshing, error }:
-  { updatedAt: Date | null; refreshing: boolean; error: string }) {
-  return <span className={`update-label ${error ? 'update-label-error' : ''}`}>
-    <span className={`status-dot ${error ? 'dot-muted' : ''}`} />
-    {error ? '刷新失败' : refreshing ? '正在同步' : '每 5 秒自动更新'}
-    {updatedAt && <span className="update-time">上次更新 {timeLabel(updatedAt)}</span>}
-  </span>;
-}
-
-export function OverviewPage({ onUnauthorized, refreshToken, onOpenService, onOpenNode, onServices, onNodes }:
-  PageProps & { onOpenService: (id: string) => void; onOpenNode: (id: string) => void;
-    onServices: () => void; onNodes: () => void }) {
-  const poll = usePolling(loadOverview, 5000, onUnauthorized, refreshToken);
-  const data = poll.data;
-  const nodes = data?.nodes ?? [];
-  const completeMemory = nodes.length > 0 && nodes.every(entry =>
-    hasMetric(entry.nodeInfoSnapshot?.reservedMemory) && hasMetric(entry.nodeInfoSnapshot?.maxMemory));
-  const reserved = completeMemory ? nodes.reduce((sum, entry) => sum + entry.nodeInfoSnapshot!.reservedMemory, 0) : null;
-  const capacity = completeMemory ? nodes.reduce((sum, entry) => sum + entry.nodeInfoSnapshot!.maxMemory, 0) : null;
-  const running = data?.services.filter(service => service.lifeCycle === 'RUNNING').length;
-  const stats = [
-    { label: '集群节点', value: data ? String(nodes.length).padStart(2, '0') : '—', icon: Network },
-    { label: '服务实例', value: data ? String(data.services.length).padStart(2, '0') : '—', icon: Box },
-    { label: '运行中', value: running === undefined ? '—' : String(running).padStart(2, '0'), icon: Activity },
-    { label: '预留内存', value: memoryMb(reserved), note: `节点总容量 ${memoryMb(capacity)}`, icon: HardDrive },
-  ];
-
-  return <>
-    <PageHeading title="运行概览" actions={
-      <Button variant="primary" onClick={onServices}>管理服务<ArrowRight size={16} /></Button>}>
-      <span>当前节点 <strong className="mono">{data?.status.Identity.uniqueId || '—'}</strong></span>
-      <span>版本 <strong>{data?.status.Version || '—'}</strong></span>
-    </PageHeading>
-    <Message>{poll.error}</Message>
-    <div className="section-line"><span className="section-label">网络状态</span><UpdateLabel {...poll} /></div>
-    <section className="stats-grid" aria-label="网络指标">{stats.map(stat => <article className="stat-card" key={stat.label}>
-      <div className="stat-top"><span>{stat.label}</span><stat.icon size={17} /></div>
-      <strong className="stat-value">{stat.value}</strong>{stat.note && <small>{stat.note}</small>}
-    </article>)}</section>
-    <div className="overview-columns"><Panel title="节点资源"
-      action={<Button variant="ghost" className="text-action" onClick={onNodes}>全部节点<ArrowRight size={15} /></Button>}>
-      {poll.loading ? <EmptyState loading /> : nodes.length ? <div className="node-summary-list">
-        {nodes.slice(0, 3).map(entry => <NodeCard key={entry.node.uniqueId} entry={entry} onOpen={onOpenNode} compact />)}
-      </div> : <EmptyState title={poll.error ? '节点数据暂不可用' : '暂无节点'} />}
-    </Panel><Panel title="服务状态分布" className="distribution-panel">
-      <div className="distribution-total"><strong>{data ? data.services.length : '—'}</strong><span>服务实例</span>
-        <span className="distribution-symbol"><Box size={31} strokeWidth={1.4} /></span></div>
-      <div className="distribution-bar" aria-hidden="true">{Object.keys(lifecycleLabels).map(lifeCycle => {
-        const count = data?.services.filter(service => service.lifeCycle === lifeCycle).length ?? 0;
-        return count > 0 && <span key={lifeCycle} className={`distribution-${lifeCycle.toLowerCase()}`}
-          style={{ flexGrow: count }} />;
-      })}</div>
-      <div className="distribution-legend">{Object.entries(lifecycleLabels).map(([lifeCycle, label]) =>
-        <div key={lifeCycle}><span className={`legend-dot legend-${lifeCycle.toLowerCase()}`} />
-          <span>{label}</span><strong>{data ? data.services.filter(service => service.lifeCycle === lifeCycle).length : '—'}</strong>
-        </div>)}</div>
-    </Panel></div>
-    <Panel title="服务列表"
-      action={<Button variant="ghost" className="text-action" onClick={onServices}>全部服务<ArrowRight size={15} /></Button>}>
-      {poll.loading ? <EmptyState loading /> : data?.services.length
-        ? <ServiceTable services={data.services.slice(0, 5)} onSelect={onOpenService} />
-        : <EmptyState title={poll.error ? '服务数据暂不可用' : '暂无服务'} />}
+export function OverviewPage() {
+  const fleet = useFleet();
+  const [params, setParams] = useSearchParams();
+  const big = params.get('display') === 'wall';
+  useEffect(() => {
+    if (!big) return;
+    const exit = (event: KeyboardEvent) => { if (event.key === 'Escape') setParams(previous => { const next = new URLSearchParams(previous); next.delete('display'); return next; }, { replace: true }); };
+    window.addEventListener('keydown', exit);
+    return () => window.removeEventListener('keydown', exit);
+  }, [big, setParams]);
+  const live = (fleet.metrics.data?.nodes ?? []).filter(fresh);
+  const measured = live.filter(item => hasMetric(item.cpuPercent) && item.logicalCpuCount > 0);
+  const cores = measured.reduce((sum, item) => sum + item.logicalCpuCount, 0);
+  const cpu = cores ? measured.reduce((sum, item) => sum + item.cpuPercent * item.logicalCpuCount, 0) / cores : null;
+  const sum = (field: 'usedMemoryBytes' | 'totalMemoryBytes' | 'availableMemoryBytes' | 'runningConfiguredMemoryMb' | 'maxMemoryMb') =>
+    live.length ? live.reduce((total, item) => total + item[field], 0) : null;
+  const playerTasks = new Map<string, number>();
+  if (!fleet.players.error) for (const player of new Map((fleet.players.data ?? []).map(item => [item.uniqueId, item])).values()) {
+    const name = player.server?.taskName;
+    if (name) playerTasks.set(name, (playerTasks.get(name) ?? 0) + 1);
+  }
+  const memoryTasks = new Map<string, number>();
+  const states = new Map<string, Slice>();
+  for (const service of fleet.services.data ?? []) {
+    const state = service.lifeCycle;
+    const stateColors = { DEFINED: '#9333ea', PREPARED: '#2563eb', RUNNING: '#16a34a', STOPPED: '#ea580c', DELETED: '#8b8b93' };
+    states.set(state, { id: state, name: lifecycleLabels[state], value: (states.get(state)?.value ?? 0) + 1, color: stateColors[state] });
+    if (service.lifeCycle !== 'RUNNING') continue;
+    const memory = fleet.serviceMetric(service)?.residentMemoryBytes;
+    const name = service.configuration.serviceId.taskName;
+    if (hasMetric(memory)) memoryTasks.set(name, (memoryTasks.get(name) ?? 0) + memory);
+  }
+  const slices = (map: Map<string, number>) => topSlices([...map].map(([name, value]) => ({ id: name, name, value, to: resourceUrl('tasks', name) })));
+  const players = slices(playerTasks);
+  const memory = slices(memoryTasks);
+  const color = useChartColors([...players, ...memory].filter(item => item.id !== '__other').map(item => item.id));
+  const colors = (items: Slice[]) => items.map(item => ({ ...item, color: item.color ?? color(item.id) }));
+  return <><PageHeading title="运行概览" actions={<Button onClick={() => setParams(previous => {
+    const next = new URLSearchParams(previous); big ? next.delete('display') : next.set('display', 'wall'); return next;
+  }, { replace: true })}>{big ? <Minimize2 size={16} /> : <Maximize2 size={16} />}{big ? '退出大屏' : '大屏'}</Button>} />
+    <FleetErrors sources={[fleet.services, fleet.nodes, fleet.tasks, fleet.players, fleet.metrics]} />
+    <Summary items={[
+      { label: '全网在线玩家', value: fleet.players.data && !fleet.players.error ? new Set(fleet.players.data.map(player => player.uniqueId)).size : '—' },
+      { label: '运行 / 总实例', value: fleet.services.data ? `${fleet.services.data.filter(service => service.lifeCycle === 'RUNNING').length} / ${fleet.services.data.length}` : '—' },
+      { label: '在线 / 总节点', value: fleet.nodes.data ? `${fleet.nodes.data.filter(node => node.nodeInfoSnapshot && Date.now() - node.nodeInfoSnapshot.creationTime < 15000).length} / ${fleet.nodes.data.length}` : '—' },
+      { label: '整机 CPU · 核数加权', value: percent(cpu) },
+      { label: '物理内存 · 已用 / 总量', value: `${memoryBytes(sum('usedMemoryBytes'))} / ${memoryBytes(sum('totalMemoryBytes'))}` },
+      { label: '物理可用内存', value: memoryBytes(sum('availableMemoryBytes')) },
+      { label: '运行配置 / 配置上限', value: `${memoryMb(sum('runningConfiguredMemoryMb'))} / ${memoryMb(sum('maxMemoryMb'))}` },
+    ]} />
+    <MetricsTrends />
+    <PlayerTrends />
+    <div className="overview-distributions"><Donut title="玩家分布 · 服务器任务" items={colors(players)} format={value => `${value} 人`} />
+      <Donut title="进程内存 · 任务分布" items={colors(memory)} format={memoryBytes} />
+      <Donut title="实例状态" items={[...states.values()]} format={value => `${value} 台`} /></div>
+    <Panel title="任务运行" action={<Link to="/tasks">全部任务 →</Link>}>
+      {fleet.tasks.data?.length ? <TaskTable tasks={fleet.tasks.data} /> : <EmptyState loading={fleet.tasks.loading} title="暂无任务" />}
+    </Panel>
+    <Panel title="节点资源" action={<Link to="/nodes">全部节点 →</Link>}>
+      {fleet.nodes.data?.length ? <NodeTable nodes={fleet.nodes.data} /> : <EmptyState loading={fleet.nodes.loading} title="暂无节点" />}
     </Panel>
   </>;
 }
 
-function NodeCard({ entry, onOpen, compact = false }:
-  { entry: ClusterEntry; onOpen: (id: string) => void; compact?: boolean }) {
-  const snapshot = entry.nodeInfoSnapshot;
-  return <article className={`node-card ${compact ? 'node-card-compact' : ''}`}>
-    <button className="node-card-heading" onClick={() => onOpen(entry.node.uniqueId)}>
-      <span className="node-icon"><Server size={18} /></span><span className="node-name"><strong>{entry.node.uniqueId}</strong>
-        <small>{compact ? snapshot?.version || '暂无快照' : addressLabel(entry.node.listeners?.[0])}</small></span>
-      <span className="node-service-count">{snapshot?.currentServicesCount ?? '—'} 个服务</span><ChevronRight size={15} />
-    </button>
-    <div className="node-metrics"><div><span><Cpu size={13} />CPU</span><strong>{percent(snapshot?.systemCpuUsage)}</strong>
-      <Meter value={snapshot?.systemCpuUsage} /></div>
-      <div><span><HardDrive size={13} />预留内存</span><strong>{memoryMb(snapshot?.reservedMemory)}
-        <small> / {memoryMb(snapshot?.maxMemory)}</small></strong>
-        <Meter value={snapshot?.reservedMemory} max={snapshot?.maxMemory} /></div></div>
-    {!compact && <div className="node-card-footer"><span><span className={`status-dot ${snapshot ? '' : 'dot-muted'}`} />
-      {snapshot ? snapshot.version : '暂无快照'}</span><span>已用 {memoryMb(snapshot?.usedMemory)}</span></div>}
-  </article>;
-}
-
-export function NodesPage({ onUnauthorized, refreshToken, onOpenNode }:
-  PageProps & { onOpenNode: (id: string) => void }) {
-  const poll = usePolling(api.nodes, 5000, onUnauthorized, refreshToken);
-  return <><PageHeading title="节点管理"
-    actions={<span className="count-badge">{poll.data?.length ?? '—'} 个节点</span>} />
-    <Message>{poll.error}</Message><div className="section-line"><span className="section-label">全部节点</span>
-      <UpdateLabel {...poll} /></div>
-    {poll.loading ? <Panel title="集群节点"><EmptyState loading /></Panel>
-      : poll.data?.length ? <div className="nodes-grid">{poll.data.map(entry =>
-        <NodeCard key={entry.node.uniqueId} entry={entry} onOpen={onOpenNode} />)}</div>
-        : <Panel title="集群节点"><EmptyState title={poll.error ? '节点数据暂不可用' : '暂无节点'} /></Panel>}
-  </>;
-}
-
-export function ServicesPage({ onUnauthorized, refreshToken, nodeFilter, setNodeFilter, selectedId, onSelect }:
-  PageProps & { nodeFilter: string; setNodeFilter: (id: string) => void; selectedId: string | null;
-    onSelect: (id: string | null) => void }) {
-  const poll = usePolling(api.services, 5000, onUnauthorized, refreshToken);
-  const [search, setSearch] = useState('');
-  const [lifeCycle, setLifeCycle] = useState('');
-  const [pending, setPending] = useState<PendingOperation | null>(null);
-  const [operationError, setOperationError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [operationRevision, setOperationRevision] = useState(0);
-  const request = useRef<AbortController | null>(null);
-  useEffect(() => () => request.current?.abort(), []);
-
-  async function operate(id: string, operation: ServiceOperation) {
-    const controller = new AbortController();
-    request.current = controller;
-    setPending({ id, operation }); setOperationError(''); setNotice('');
-    try {
-      await api.operate(id, operation, controller.signal);
-      if (controller.signal.aborted) return;
-      setNotice(`${operationLabels[operation]}请求已提交，正在刷新服务状态。`);
-      setOperationRevision(value => value + 1);
-      poll.refresh();
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      if (isUnauthorized(error)) onUnauthorized();
-      else setOperationError(errorMessage(error));
-    } finally {
-      if (!controller.signal.aborted) setPending(null);
-    }
-  }
-
-  function select(id: string | null) { setOperationError(''); setNotice(''); onSelect(id); }
-  const services = poll.data ?? [];
-  const nodes = Array.from(new Set([...services.map(service => service.configuration.serviceId.nodeUniqueId),
-    ...(nodeFilter ? [nodeFilter] : [])])).sort();
-  const filtered = services.filter(service => {
-    const id = service.configuration.serviceId;
-    return serviceName(service).toLowerCase().includes(search.trim().toLowerCase())
-      && (!nodeFilter || id.nodeUniqueId === nodeFilter) && (!lifeCycle || service.lifeCycle === lifeCycle);
-  }).sort((left, right) => serviceName(left).localeCompare(serviceName(right), 'zh-CN', { numeric: true }));
-
-  return <><PageHeading title="服务管理"
-    actions={<span className="count-badge">{poll.data?.length ?? '—'} 个实例</span>} />
-    <Message>{poll.error || operationError}</Message><Message kind="success">{notice}</Message>
-    <div className="section-line"><span className="section-label">全部服务</span><UpdateLabel {...poll} /></div>
-    <section className="panel"><div className="service-filters"><label className="search-field">
-      <Search size={17} /><input type="search" aria-label="搜索服务名称" placeholder="搜索服务名称…"
-        value={search} onChange={event => setSearch(event.target.value)} /></label>
-      <div className="filter-selects"><label><span className="sr-only">所属节点</span>
-        <select value={nodeFilter} onChange={event => setNodeFilter(event.target.value)}>
-          <option value="">全部节点</option>{nodes.map(id => <option key={id} value={id}>{id}</option>)}</select></label>
-        <label><span className="sr-only">生命周期</span><select value={lifeCycle} onChange={event => setLifeCycle(event.target.value)}>
-          <option value="">全部状态</option>{Object.entries(lifecycleLabels).map(([value, label]) =>
-            <option key={value} value={value}>{label}</option>)}</select></label></div>
-    </div>
-      {poll.loading ? <EmptyState loading /> : filtered.length ? <ServiceTable services={filtered} onSelect={select}
-        pending={pending} onOperate={(id, operation) => void operate(id, operation)} />
-        : <EmptyState title={poll.error && !poll.data ? '服务数据暂不可用' : services.length ? '没有匹配的服务' : '暂无服务'}
-          description={services.length ? '调整筛选条件' : undefined} />}
-      <div className="table-footer"><span>{poll.data ? `显示 ${filtered.length} / ${services.length} 个服务` : '等待服务数据'}</span></div>
-    </section>
-    {selectedId && <ServiceDetail key={selectedId} id={selectedId} refreshToken={refreshToken + operationRevision}
-      onUnauthorized={onUnauthorized} onClose={() => select(null)} pending={pending}
-      onOperate={(id, operation) => void operate(id, operation)} operationError={operationError} notice={notice} />}
-  </>;
-}

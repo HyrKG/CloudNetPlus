@@ -39,6 +39,11 @@ public class V1HttpHandlerLogout extends V1HttpHandler {
       return;
     }
 
+    if (context.cookie("CloudNet-REST_V1-Session") != null
+      && de.dytanic.cloudnet.ext.rest.console.ConsoleBridge.getInstance() != null) {
+      de.dytanic.cloudnet.ext.rest.console.ConsoleBridge.getInstance()
+        .closeSession(context.cookie("CloudNet-REST_V1-Session").getValue());
+    }
     HTTP_SESSION.logout(context);
 
     context

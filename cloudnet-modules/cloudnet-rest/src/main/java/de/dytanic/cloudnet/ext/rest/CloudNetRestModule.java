@@ -35,13 +35,48 @@ import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerShowOpenAPI;
 import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerStatus;
 import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerTasks;
 import de.dytanic.cloudnet.ext.rest.http.V1SecurityProtectionHttpHandler;
+import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerConsole;
+import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerTaskServices;
+import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerNodeOperations;
+import de.dytanic.cloudnet.ext.rest.console.ConsoleBridge;
+import de.dytanic.cloudnet.ext.rest.metrics.ResourceMetrics;
+import de.dytanic.cloudnet.ext.rest.tasks.TaskOperations;
+import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerTaskOperations;
+import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerMetrics;
+import de.dytanic.cloudnet.ext.rest.http.V1HttpHandlerConsoleLogs;
+import de.dytanic.cloudnet.ext.rest.console.ConsoleLogs;
 import de.dytanic.cloudnet.module.NodeCloudNetModule;
 
 public final class CloudNetRestModule extends NodeCloudNetModule {
 
+  private TaskOperations taskOperations;
+  private ConsoleBridge consoleBridge;
+  private ResourceMetrics metrics;
+  private ConsoleLogs consoleLogs;
+
   @ModuleTask(order = 127, event = ModuleLifeCycle.STARTED)
   public void initHttpHandlers() {
+    this.taskOperations = new TaskOperations();
+    this.taskOperations.start();
+    this.metrics = new ResourceMetrics(this.getModuleWrapper().getDataDirectory());
+    this.metrics.start();
+    this.consoleBridge = new ConsoleBridge();
+    this.consoleBridge.start();
+    this.consoleLogs = new ConsoleLogs();
+    this.consoleLogs.start();
     registerHttpHandlers(this.getHttpServer());
+  }
+
+  @ModuleTask(event = ModuleLifeCycle.STOPPED)
+  public void closeConsoleBridge() {
+    if (this.taskOperations != null) this.taskOperations.close();
+    if (this.consoleLogs != null) this.consoleLogs.close();
+    if (this.metrics != null) {
+      this.metrics.close();
+    }
+    if (this.consoleBridge != null) {
+      this.consoleBridge.close();
+    }
   }
 
   public static void registerHttpHandlers(IHttpServer httpServer) {
@@ -52,10 +87,23 @@ public final class CloudNetRestModule extends NodeCloudNetModule {
       .registerHandler("/api/v1/auth", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerAuthentication())
       .registerHandler("/api/v1/logout", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerLogout())
       .registerHandler("/api/v1/ping", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerPing("cloudnet.http.v1.ping"))
+      .registerHandler("/api/v1/metrics", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerMetrics())
+      .registerHandler("/api/v1/metrics/history", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerMetrics())
+      .registerHandler("/api/v1/metrics/services/history", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerMetrics())
+      .registerHandler("/api/v1/metrics/tasks/history", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerMetrics())
+      .registerHandler("/api/v1/metrics/players/history", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerMetrics())
       .registerHandler("/api/v1/status", IHttpHandler.PRIORITY_NORMAL,
         new V1HttpHandlerStatus("cloudnet.http.v1.status"))
       .registerHandler("/api/v1/command", IHttpHandler.PRIORITY_NORMAL,
         new V1HttpHandlerCommand("cloudnet.http.v1.command"))
+      .registerHandler("/api/v1/console/{type}/{id}", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerConsole())
+      .registerHandler("/api/v1/console/{type}/{id}/logs", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerConsoleLogs())
+      .registerHandler("/api/v1/console/{type}/{id}/logs/{fileId}", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerConsoleLogs())
+      .registerHandler("/api/v1/cluster/{node}/command", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerNodeOperations())
+      .registerHandler("/api/v1/task-operations/{id}", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
+      .registerHandler("/api/v1/tasks/{name}/minimum-services", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
+      .registerHandler("/api/v1/tasks/{name}/stop", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskOperations())
+      .registerHandler("/api/v1/tasks/{name}/services", IHttpHandler.PRIORITY_NORMAL, new V1HttpHandlerTaskServices())
       .registerHandler("/api/v1/modules", IHttpHandler.PRIORITY_NORMAL,
         new V1HttpHandlerModules("cloudnet.http.v1.modules"))
       .registerHandler("/api/v1/cluster", IHttpHandler.PRIORITY_NORMAL,

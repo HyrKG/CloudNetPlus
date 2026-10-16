@@ -21,19 +21,18 @@ import de.dytanic.cloudnet.cluster.NodeServer;
 import de.dytanic.cloudnet.common.document.gson.JsonDocument;
 import de.dytanic.cloudnet.driver.network.http.HttpResponseCode;
 import de.dytanic.cloudnet.driver.network.http.IHttpContext;
-import de.dytanic.cloudnet.http.V1HttpHandler;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public final class V1HttpHandlerCluster extends V1HttpHandler {
+public final class V1HttpHandlerCluster extends V1HttpHandlerNodeOperations {
 
   public V1HttpHandlerCluster(String permission) {
-    super(permission);
+    super();
   }
 
   @Override
   public void handleOptions(String path, IHttpContext context) {
-    this.sendOptions(context, "OPTIONS, GET");
+    this.sendOptions(context, "OPTIONS, GET, POST, DELETE");
   }
 
   @Override

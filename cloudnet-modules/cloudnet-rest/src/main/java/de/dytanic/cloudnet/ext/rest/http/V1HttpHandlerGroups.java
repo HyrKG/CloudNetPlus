@@ -95,6 +95,7 @@ public final class V1HttpHandlerGroups extends V1HttpHandler {
 
     CloudNetDriver.getInstance().getGroupConfigurationProvider().addGroupConfiguration(groupConfiguration);
     context.response().statusCode(status);
+    context.closeAfter(true).cancelNext();
   }
 
   @Override
@@ -111,5 +112,6 @@ public final class V1HttpHandlerGroups extends V1HttpHandler {
     }
 
     context.response().statusCode(HttpResponseCode.HTTP_OK);
+    context.closeAfter(true).cancelNext();
   }
 }

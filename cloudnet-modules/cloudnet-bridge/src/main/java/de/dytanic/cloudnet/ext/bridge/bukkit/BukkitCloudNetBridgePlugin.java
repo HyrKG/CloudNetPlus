@@ -30,6 +30,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
@@ -41,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 public final class BukkitCloudNetBridgePlugin extends JavaPlugin {
 
   private Supplier<ServerListPingEvent> serverListPingEventConstructor;
+  private long lastServiceInfoUpdate = System.nanoTime();
 
   @Override
   public synchronized void onEnable() {
@@ -59,6 +61,7 @@ public final class BukkitCloudNetBridgePlugin extends JavaPlugin {
 
   @Override
   public synchronized void onDisable() {
+    Bukkit.getScheduler().cancelTasks(this);
     HandlerList.unregisterAll(this);
     CloudNetDriver.getInstance().getEventManager().unregisterListeners(this.getClass().getClassLoader());
     Wrapper.getInstance().unregisterPacketListenersByClassLoader(this.getClass().getClassLoader());
@@ -79,8 +82,15 @@ public final class BukkitCloudNetBridgePlugin extends JavaPlugin {
       boolean value = false;
 
       try {
+        long now = System.nanoTime();
+        boolean periodicUpdate = now - this.lastServiceInfoUpdate >= TimeUnit.SECONDS.toNanos(30);
+
         ServerListPingEvent serverListPingEvent = this.constructServerListPingEvent();
         if (serverListPingEvent == null) {
+          if (periodicUpdate) {
+            this.lastServiceInfoUpdate = now;
+            BridgeHelper.updateServiceInfo();
+          }
           return;
         }
 
@@ -101,11 +111,13 @@ public final class BukkitCloudNetBridgePlugin extends JavaPlugin {
         }
 
         if (value) {
+          this.lastServiceInfoUpdate = now;
           BridgeServerHelper.changeToIngame(true);
           return;
         }
 
-        if (hasToUpdate) {
+        if (hasToUpdate || periodicUpdate) {
+          this.lastServiceInfoUpdate = now;
           BridgeHelper.updateServiceInfo();
         }
       } catch (Exception exception) {
